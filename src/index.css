@@ -15,22 +15,84 @@
    viennent de @alphabette/shell et ne sont pas retouchées ici.
    ========================================================================== */
 
+/* --------------------------------------------------------------------------
+   Palette de l'application — deux déclinaisons, pilotées par le thème de la
+   base commune (<html data-ab-theme>). La base pose le thème sur <html>, donc
+   passer en « jour » éclaircit AUSSI le contenu, pas seulement les barres.
+
+   « nuit »  : l'affiche est encrée sur bitume (identité d'origine).
+   « jour »  : la même affiche, imprimée sur papier clair.
+
+   Le jaune et le rouge ne changent pas : c'est l'identité de Révolution.
+   -------------------------------------------------------------------------- */
+
+/* Valeurs par défaut : l'affiche encrée de nuit (identité d'origine).
+   Attention : on cible `:root` / `html[...]` et surtout PAS un sélecteur
+   d'attribut seul, sinon `.ab-shell` (qui porte lui aussi data-ab-theme)
+   reprendrait la main sur tout son contenu. */
+:root {
+  --app-fond: #0d0d0d;
+  --app-carte: #171717;
+  --app-carte2: #222222;
+  --app-bord: #343434;
+  --app-texte: #f7f7f7;
+  --app-gris: #a3a3a3;
+  /* L'encre posée sur le jaune, le rouge ou le papier. */
+  --app-encre: #0d0d0d;
+  --app-ombre: rgba(0, 0, 0, 0.85);
+  /* Rails des curseurs et barres de résultat. */
+  --app-piste: #2b2b2b;
+  --app-sans-bord: #4a4a4a;
+  --app-sans-texte: #cfcfcf;
+  --app-sans-fond: #1d1d1d;
+  --app-sans-choisi-fond: #cfcfcf;
+  --app-sans-choisi-texte: #0d0d0d;
+  /* Couleurs de texte des carrés de vote : sur bitume, les deux couleurs
+     d'identité passent seules ; sur papier, il faut les assombrir pour que
+     le pourcentage reste lisible. Le bord garde la teinte de la marque. */
+  --app-oui-texte: #f2b705;
+  --app-non-texte: #c8102e;
+}
+
+/* La même affiche, imprimée sur papier clair. */
+html[data-ab-theme='jour'] {
+  --app-fond: #f1ece0;
+  --app-carte: #fffdf6;
+  --app-carte2: #e8e1cf;
+  --app-bord: #b8ad94;
+  --app-texte: #16130c;
+  --app-gris: #6c6454;
+  --app-encre: #16130c;
+  --app-ombre: rgba(22, 19, 12, 0.6);
+  --app-piste: #d7ceba;
+  --app-sans-bord: #b3aa92;
+  --app-sans-texte: #57503f;
+  --app-sans-fond: #e1d9c7;
+  --app-sans-choisi-fond: #57503f;
+  --app-sans-choisi-texte: #fffdf6;
+  --app-oui-texte: #8a6200;
+  --app-non-texte: #a80c26;
+}
+
 @theme {
   --color-jaune: #f2b705;
   --color-jaune-clair: #ffd54a;
   --color-rouge: var(--ab-accent, #c8102e);
-  --color-fond: #0d0d0d;
-  --color-carte: #171717;
-  --color-carte2: #222222;
-  --color-bord: #343434;
-  --color-texte: #f7f7f7;
-  --color-gris: #a3a3a3;
+  /* Les couleurs de la charte renvoient aux variables ci-dessus : les mêmes
+     classes Tailwind (bg-carte, text-texte…) suivent donc le thème. */
+  --color-fond: var(--app-fond);
+  --color-carte: var(--app-carte);
+  --color-carte2: var(--app-carte2);
+  --color-bord: var(--app-bord);
+  --color-texte: var(--app-texte);
+  --color-gris: var(--app-gris);
+  --color-encre: var(--app-encre);
   --font-affiche: 'Arial Black', 'Arial Bold', Impact, 'Helvetica Neue', system-ui, sans-serif;
 }
 
-/* La zone de contenu appartient à l'application : fond sombre, pleine largeur. */
+/* La zone de contenu appartient à l'application : pleine largeur, fond du thème. */
 .ab-shell .ab-content {
-  background: var(--color-fond);
+  background: var(--app-fond);
   padding: 0;
 }
 
@@ -39,7 +101,7 @@ html {
 }
 
 body {
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.45;
 }
 
@@ -84,7 +146,7 @@ body {
 }
 
 .ombre-dure {
-  box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.85);
+  box-shadow: 6px 6px 0 var(--app-ombre);
 }
 
 .ombre-dure-jaune {
@@ -99,7 +161,7 @@ body {
 .bandeau {
   display: inline-block;
   background: var(--color-jaune);
-  color: #0d0d0d;
+  color: var(--app-encre);
   padding: 0.35rem 0.7rem;
   border-radius: 0.65rem;
   transform: rotate(-1.2deg);
@@ -180,32 +242,32 @@ body {
 
 .carre-vote--oui {
   border-color: var(--color-jaune);
-  color: var(--color-jaune);
+  color: var(--app-oui-texte);
   background: color-mix(in srgb, var(--color-jaune) 12%, var(--color-carte));
 }
 
 .carre-vote--non {
   border-color: var(--color-rouge);
-  color: var(--color-rouge);
+  color: var(--app-non-texte);
   background: color-mix(in srgb, var(--color-rouge) 14%, var(--color-carte));
 }
 
 .carre-vote--sans {
-  border-color: #4a4a4a;
-  color: #cfcfcf;
-  background: #1d1d1d;
+  border-color: var(--app-sans-bord);
+  color: var(--app-sans-texte);
+  background: var(--app-sans-fond);
 }
 
 /* Le carré que tu as choisi : plein, avec un ruban « TON VOTE ». */
 .carre-vote--choisi {
-  color: #0d0d0d;
-  border-color: #0d0d0d;
+  color: var(--app-encre);
+  border-color: var(--app-encre);
   box-shadow: 0 0 0 4px currentColor inset;
 }
 
 .carre-vote--choisi.carre-vote--oui {
   background: var(--color-jaune);
-  color: #0d0d0d;
+  color: var(--app-encre);
   box-shadow: 0 0 0 4px var(--color-jaune) inset, 0 0 22px rgba(242, 183, 5, 0.5);
 }
 
@@ -216,9 +278,9 @@ body {
 }
 
 .carre-vote--choisi.carre-vote--sans {
-  background: #cfcfcf;
-  color: #0d0d0d;
-  box-shadow: 0 0 0 4px #cfcfcf inset;
+  background: var(--app-sans-choisi-fond);
+  color: var(--app-sans-choisi-texte);
+  box-shadow: 0 0 0 4px var(--app-sans-choisi-fond) inset;
 }
 
 .carre-vote--choisi .pourcentage,
@@ -235,8 +297,8 @@ body {
   font-weight: 900;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  background: #0d0d0d;
-  color: #ffffff;
+  background: var(--app-encre);
+  color: var(--app-carte);
   padding: 0.15rem 0.4rem;
   border-radius: 999px;
 }
@@ -256,8 +318,8 @@ body {
   height: 2rem;
   overflow: hidden;
   border-radius: 0.75rem;
-  border: 2px solid #0d0d0d;
-  background: #2b2b2b;
+  border: 2px solid var(--app-encre);
+  background: var(--app-piste);
 }
 
 .barre-resultat > span {
@@ -266,7 +328,7 @@ body {
   justify-content: center;
   font-size: 0.7rem;
   font-weight: 900;
-  color: #0d0d0d;
+  color: var(--app-encre);
   overflow: hidden;
   white-space: nowrap;
 }
@@ -287,7 +349,7 @@ body {
 .curseur::-webkit-slider-runnable-track {
   height: 1.4rem;
   border-radius: 999px;
-  background: #2b2b2b;
+  background: var(--app-piste);
   border: 2px solid var(--color-bord);
 }
 
@@ -298,14 +360,14 @@ body {
   margin-top: -0.85rem;
   border-radius: 999px;
   background: var(--color-jaune);
-  border: 3px solid #0d0d0d;
+  border: 3px solid var(--app-encre);
   box-shadow: 0 0 0 3px var(--color-jaune);
 }
 
 .curseur::-moz-range-track {
   height: 1.4rem;
   border-radius: 999px;
-  background: #2b2b2b;
+  background: var(--app-piste);
   border: 2px solid var(--color-bord);
 }
 
@@ -314,7 +376,7 @@ body {
   height: 2.6rem;
   border-radius: 999px;
   background: var(--color-jaune);
-  border: 3px solid #0d0d0d;
+  border: 3px solid var(--app-encre);
   box-shadow: 0 0 0 3px var(--color-jaune);
 }
 
@@ -388,8 +450,8 @@ body {
 .hachures {
   background-image: repeating-linear-gradient(
     45deg,
-    rgba(200, 16, 46, 0.28) 0,
-    rgba(200, 16, 46, 0.28) 0.6rem,
+    color-mix(in srgb, var(--color-rouge) 30%, transparent) 0,
+    color-mix(in srgb, var(--color-rouge) 30%, transparent) 0.6rem,
     transparent 0.6rem,
     transparent 1.2rem
   );

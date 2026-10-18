@@ -141,7 +141,7 @@ export function Accueil() {
               const premier = visibles[0];
               if (premier) nav.aller({ vue: 'sujet', sujetId: premier.id });
             }}
-            className="affiche mt-3 w-full rounded-xl bg-texte px-4 py-3 text-sm text-black"
+            className="affiche mt-3 w-full rounded-xl bg-texte px-4 py-3 text-sm text-fond"
           >
             ✊ {restantes} question{restantes > 1 ? 's' : ''} attendent ton vote
           </button>
