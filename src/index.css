@@ -1,23 +1,31 @@
 @import 'tailwindcss';
 
 /* ==========================================================================
-   Charte « affiche de manifestation » de Révolution.
-   Elle s'applique AU CONTENU de l'application : les deux barres du haut
+   Charte « AFFICHE » de Révolution — conçue d'abord pour le pouce.
+
+   Principes :
+   · fond quasi noir, deux couleurs qui claquent : jaune et rouge ;
+   · de GROS blocs à bord épais avec une ombre dure (effet sérigraphie) ;
+   · les pourcentages sont énormes et vivent À L'INTÉRIEUR des carrés de vote ;
+   · tout ce qui se touche fait au moins 56 px de haut ;
+   · une colonne sur téléphone, deux sur tablette, trois sur grand écran.
+
+   Le rouge n'est pas codé en dur : il dérive de --ab-accent, la couleur
+   d'identité du site (règle nº 3 de l'écosystème). Les deux barres du haut
    viennent de @alphabette/shell et ne sont pas retouchées ici.
-   Le rouge n'est pas écrit en dur : il dérive de --ab-accent, la couleur
-   d'identité du site (règle nº 3 de l'écosystème).
    ========================================================================== */
 
 @theme {
   --color-jaune: #f2b705;
+  --color-jaune-clair: #ffd54a;
   --color-rouge: var(--ab-accent, #c8102e);
-  --color-fond: #111111;
-  --color-carte: #1a1a1a;
-  --color-carte2: #232323;
+  --color-fond: #0d0d0d;
+  --color-carte: #171717;
+  --color-carte2: #222222;
   --color-bord: #343434;
-  --color-texte: #f4f4f4;
-  --color-gris: #9d9d9d;
-  --font-affiche: 'Arial Black', 'Arial Bold', 'Helvetica Neue', system-ui, sans-serif;
+  --color-texte: #f7f7f7;
+  --color-gris: #a3a3a3;
+  --font-affiche: 'Arial Black', 'Arial Bold', Impact, 'Helvetica Neue', system-ui, sans-serif;
 }
 
 /* La zone de contenu appartient à l'application : fond sombre, pleine largeur. */
@@ -26,63 +34,304 @@
   padding: 0;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+/* --------------------------------------------------------------------------
+   Typographie affiche
+   -------------------------------------------------------------------------- */
+
 .affiche {
   font-family: var(--font-affiche);
   text-transform: uppercase;
-  letter-spacing: -0.02em;
-  line-height: 0.95;
+  letter-spacing: -0.025em;
+  line-height: 0.92;
   font-weight: 900;
 }
 
-/* Curseurs de budget : gros pouces, lisibles au doigt. */
+.affiche-large {
+  font-family: var(--font-affiche);
+  text-transform: uppercase;
+  letter-spacing: -0.04em;
+  line-height: 0.86;
+  font-weight: 900;
+}
+
+/* --------------------------------------------------------------------------
+   Blocs : bord épais + ombre dure = le langage visuel de l'app
+   -------------------------------------------------------------------------- */
+
+.bloc {
+  border: 3px solid var(--color-bord);
+  border-radius: 1.25rem;
+  background: var(--color-carte);
+}
+
+.bloc-jaune {
+  border-color: var(--color-jaune);
+  background: color-mix(in srgb, var(--color-jaune) 9%, var(--color-carte));
+}
+
+.bloc-rouge {
+  border-color: var(--color-rouge);
+  background: color-mix(in srgb, var(--color-rouge) 11%, var(--color-carte));
+}
+
+.ombre-dure {
+  box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.85);
+}
+
+.ombre-dure-jaune {
+  box-shadow: 6px 6px 0 var(--color-jaune);
+}
+
+.ombre-dure-rouge {
+  box-shadow: 6px 6px 0 var(--color-rouge);
+}
+
+/* Bandeau de section : titre sur fond jaune, façon bandeau de manif. */
+.bandeau {
+  display: inline-block;
+  background: var(--color-jaune);
+  color: #0d0d0d;
+  padding: 0.35rem 0.7rem;
+  border-radius: 0.65rem;
+  transform: rotate(-1.2deg);
+}
+
+.bandeau-rouge {
+  background: var(--color-rouge);
+  color: #ffffff;
+}
+
+/* --------------------------------------------------------------------------
+   Les carrés de vote : le cœur de l'application.
+   Le pourcentage des autres est écrit À L'INTÉRIEUR du carré.
+   -------------------------------------------------------------------------- */
+
+.carre-vote {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  min-height: 7.5rem;
+  padding: 0.6rem 0.3rem 0.9rem;
+  border: 3px solid var(--color-bord);
+  border-radius: 1.1rem;
+  background: var(--color-carte2);
+  color: var(--color-texte);
+  overflow: hidden;
+  transition: transform 0.12s ease, background 0.18s ease, border-color 0.18s ease;
+  -webkit-tap-highlight-color: transparent;
+  /* Le pourcentage se dimensionne sur la largeur du carré, jamais sur celle
+     de l'écran : le chiffre reste énorme sans jamais être coupé. */
+  container-type: inline-size;
+}
+
+.carre-vote:active {
+  transform: translateY(3px) scale(0.98);
+}
+
+.carre-vote[disabled] {
+  opacity: 0.5;
+}
+
+.carre-vote .libelle {
+  font-family: var(--font-affiche);
+  text-transform: uppercase;
+  font-size: clamp(0.7rem, 11cqw, 1rem);
+  letter-spacing: 0.01em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.carre-vote .pourcentage {
+  font-family: var(--font-affiche);
+  font-size: clamp(1.45rem, 31cqw, 3.2rem);
+  line-height: 0.9;
+  letter-spacing: -0.05em;
+  white-space: nowrap;
+}
+
+.carre-vote .grain {
+  font-size: clamp(0.56rem, 8.5cqw, 0.72rem);
+  font-weight: 700;
+  opacity: 0.75;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.carre-vote .remplissage {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 0.5rem;
+  background: currentColor;
+  opacity: 0.35;
+  transition: width 0.4s ease;
+}
+
+.carre-vote--oui {
+  border-color: var(--color-jaune);
+  color: var(--color-jaune);
+  background: color-mix(in srgb, var(--color-jaune) 12%, var(--color-carte));
+}
+
+.carre-vote--non {
+  border-color: var(--color-rouge);
+  color: var(--color-rouge);
+  background: color-mix(in srgb, var(--color-rouge) 14%, var(--color-carte));
+}
+
+.carre-vote--sans {
+  border-color: #4a4a4a;
+  color: #cfcfcf;
+  background: #1d1d1d;
+}
+
+/* Le carré que tu as choisi : plein, avec un ruban « TON VOTE ». */
+.carre-vote--choisi {
+  color: #0d0d0d;
+  border-color: #0d0d0d;
+  box-shadow: 0 0 0 4px currentColor inset;
+}
+
+.carre-vote--choisi.carre-vote--oui {
+  background: var(--color-jaune);
+  color: #0d0d0d;
+  box-shadow: 0 0 0 4px var(--color-jaune) inset, 0 0 22px rgba(242, 183, 5, 0.5);
+}
+
+.carre-vote--choisi.carre-vote--non {
+  background: var(--color-rouge);
+  color: #ffffff;
+  box-shadow: 0 0 0 4px var(--color-rouge) inset, 0 0 22px rgba(200, 16, 46, 0.55);
+}
+
+.carre-vote--choisi.carre-vote--sans {
+  background: #cfcfcf;
+  color: #0d0d0d;
+  box-shadow: 0 0 0 4px #cfcfcf inset;
+}
+
+.carre-vote--choisi .pourcentage,
+.carre-vote--choisi .libelle,
+.carre-vote--choisi .grain {
+  opacity: 1;
+}
+
+.ruban-choix {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  font-size: 0.6rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: #0d0d0d;
+  color: #ffffff;
+  padding: 0.15rem 0.4rem;
+  border-radius: 999px;
+}
+
+.carre-vote--choisi.carre-vote--non .ruban-choix {
+  background: #ffffff;
+  color: var(--color-rouge);
+}
+
+/* --------------------------------------------------------------------------
+   Barre de résultat segmentée (OUI / NON / sans avis) avec étiquettes.
+   -------------------------------------------------------------------------- */
+
+.barre-resultat {
+  display: flex;
+  width: 100%;
+  height: 2rem;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  border: 2px solid #0d0d0d;
+  background: #2b2b2b;
+}
+
+.barre-resultat > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 900;
+  color: #0d0d0d;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* --------------------------------------------------------------------------
+   Curseurs de budget : gros pouces, lisibles au doigt.
+   -------------------------------------------------------------------------- */
+
 .curseur {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
-  height: 2.4rem;
+  height: 3rem;
   background: transparent;
   cursor: pointer;
 }
+
 .curseur::-webkit-slider-runnable-track {
-  height: 1.1rem;
+  height: 1.4rem;
   border-radius: 999px;
   background: #2b2b2b;
-  border: 1px solid var(--color-bord);
+  border: 2px solid var(--color-bord);
 }
+
 .curseur::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 2.2rem;
-  height: 2.2rem;
-  margin-top: -0.62rem;
+  width: 2.8rem;
+  height: 2.8rem;
+  margin-top: -0.85rem;
   border-radius: 999px;
   background: var(--color-jaune);
-  border: 3px solid #111111;
-  box-shadow: 0 0 0 2px var(--color-jaune);
+  border: 3px solid #0d0d0d;
+  box-shadow: 0 0 0 3px var(--color-jaune);
 }
+
 .curseur::-moz-range-track {
-  height: 1.1rem;
+  height: 1.4rem;
   border-radius: 999px;
   background: #2b2b2b;
-  border: 1px solid var(--color-bord);
+  border: 2px solid var(--color-bord);
 }
+
 .curseur::-moz-range-thumb {
-  width: 2rem;
-  height: 2rem;
+  width: 2.6rem;
+  height: 2.6rem;
   border-radius: 999px;
   background: var(--color-jaune);
-  border: 3px solid #111111;
-  box-shadow: 0 0 0 2px var(--color-jaune);
+  border: 3px solid #0d0d0d;
+  box-shadow: 0 0 0 3px var(--color-jaune);
 }
+
 .curseur:disabled {
   cursor: not-allowed;
-  opacity: 0.55;
+  opacity: 0.5;
 }
+
 .curseur:disabled::-webkit-slider-thumb {
   background: #4a4a4a;
   box-shadow: none;
 }
 
-/* Bandeau « jour J » clignotant. */
+/* --------------------------------------------------------------------------
+   Animations
+   -------------------------------------------------------------------------- */
+
 @keyframes clignote {
   0%,
   49% {
@@ -90,14 +339,13 @@
   }
   50%,
   100% {
-    opacity: 0.55;
+    opacity: 0.45;
   }
 }
 .clignote {
   animation: clignote 1.1s step-end infinite;
 }
 
-/* Le compteur de citoyens « respire » comme un compteur de manif. */
 @keyframes monte {
   from {
     transform: translateY(0.35em);
@@ -110,6 +358,75 @@
 }
 .monte {
   animation: monte 0.35s ease-out;
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.06);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.pop {
+  animation: pop 0.22s ease-out;
+}
+
+@keyframes defile {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 2rem 0;
+  }
+}
+
+/* Hachures rouges réservées aux avertissements. */
+.hachures {
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(200, 16, 46, 0.28) 0,
+    rgba(200, 16, 46, 0.28) 0.6rem,
+    transparent 0.6rem,
+    transparent 1.2rem
+  );
+}
+
+/* --------------------------------------------------------------------------
+   Mise en page : barre basse collante + défilement horizontal à cran.
+   -------------------------------------------------------------------------- */
+
+.barre-basse {
+  padding-bottom: max(0.35rem, env(safe-area-inset-bottom));
+}
+
+.defile-x {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 0.25rem;
+}
+
+.defile-x > * {
+  scroll-snap-align: start;
+  flex: 0 0 auto;
+}
+
+.defile-x::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clignote,
+  .monte,
+  .pop {
+    animation: none !important;
+  }
 }
 
 /* Impression : seule l'affiche du cahier des doléances est imprimée. */
@@ -128,12 +445,6 @@
     background: #ffffff !important;
     color: #111111 !important;
     padding: 0 !important;
-  }
-  body.impression-cahier .cahier-impression .fond-sombre {
-    background: #ffffff !important;
-    color: #111111 !important;
-  }
-  body.impression-cahier .cahier-impression .titre-impression {
-    color: #111111 !important;
+    border: 0 !important;
   }
 }

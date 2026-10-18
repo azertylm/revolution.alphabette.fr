@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { FournisseurRevolution, useRevolution } from './contexte';
-import { exigences, statsGlobales } from './moteur';
+import { exigences } from './moteur';
 import { ProviderNav, type Cible, type ValeurNav, type Vue } from './navigation';
-import { duree, joursRestants, nombre } from './outils';
-import { Badge, GrosBouton } from './ui';
+import { REGLAGES } from './reglages';
+import { duree, joursRestants } from './outils';
+import { Badge } from './ui';
 import { Onboarding } from './composants/Onboarding';
 import { ProposerSujet } from './composants/ProposerSujet';
 import { Accueil } from './vues/Accueil';
@@ -16,70 +17,56 @@ import { RendezVous } from './vues/RendezVous';
 import { Sections } from './vues/Sections';
 import { VueSujet } from './vues/VueSujet';
 
+/* ==========================================================================
+   LE CADRE DE L'APPLICATION — bandeau de Refonte, barre du bas, gros boutons.
+   Mobile d'abord : tout est calé pour le pouce, puis élargi sur tablette.
+   ========================================================================== */
+
 const ONGLETS: { vue: Vue; emoji: string; label: string }[] = [
-  { vue: 'accueil', emoji: '🏠', label: 'Accueil' },
-  { vue: 'attente', emoji: '⚖️', label: 'En attente' },
+  { vue: 'accueil', emoji: '✊', label: 'Voter' },
+  { vue: 'attente', emoji: '⚖️', label: 'Juger' },
   { vue: 'journal', emoji: '📜', label: 'Journal' },
   { vue: 'rendez-vous', emoji: '📅', label: 'Rendez-vous' },
   { vue: 'notifications', emoji: '🔔', label: 'Alertes' },
 ];
 
-/** Le bandeau de cycle : le décompte de la prochaine Refonte. */
 function BandeauCycle() {
-  const { msRestants, dureeCycle, fraction, refondreMaintenant, etat, agir } = useRevolution();
+  const { msRestants, fraction, refondreMaintenant, etat, agir } = useRevolution();
   return (
-    <div className="border-b border-bord bg-carte px-4 py-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="affiche text-jaune text-sm sm:text-base">
-          🔄 Prochaine refonte dans {duree(msRestants)}
+    <div className="border-b-[3px] border-bord bg-carte">
+      <div className="mx-auto flex w-full max-w-3xl flex-wrap items-center justify-between gap-2 px-3 py-2 lg:max-w-5xl">
+        <p className="affiche text-sm text-jaune sm:text-base">
+          🔄 Refonte dans <span className="text-texte">{duree(msRestants)}</span>
         </p>
-        <div className="flex items-center gap-2">
-          <Badge ton="gris">Cycle n°{nombre(etat.cycles)}</Badge>
+        <div className="flex items-center gap-1.5">
+          <Badge ton="gris">Cycle {etat.cycles}</Badge>
           <button
             type="button"
             onClick={() => agir({ type: 'cycle-accelere', actif: !etat.cycleAccelere })}
-            className={`rounded-lg border px-2 py-1 text-[11px] font-bold uppercase tracking-wide ${
+            className={`affiche rounded-lg border-[3px] px-2.5 py-1.5 text-[10px] ${
               etat.cycleAccelere ? 'border-jaune bg-jaune text-black' : 'border-bord bg-carte2 text-gris'
             }`}
-            title="Cycle accéléré : 60 secondes au lieu d'une heure (prototype)"
+            title="Cycle accéléré : 60 secondes au lieu d’une heure (démonstration)"
           >
-            ⏩ {etat.cycleAccelere ? 'Accéléré (60 s)' : 'Cycle normal (1 h)'}
+            ⏩ {etat.cycleAccelere ? '60 s' : '1 h'}
           </button>
           <button
             type="button"
             onClick={refondreMaintenant}
-            className="rounded-lg border border-bord bg-carte2 px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-gris"
-            title="Déclencher la Refonte tout de suite (démonstration)"
+            className="affiche rounded-lg border-[3px] border-bord bg-carte2 px-2.5 py-1.5 text-[10px] text-gris"
+            title="Déclencher la Refonte tout de suite"
           >
-            ▶︎ Refondre maintenant
+            ▶︎ Refondre
           </button>
         </div>
       </div>
-      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-bord">
+      <div className="h-2 w-full bg-bord">
         <div className="h-full bg-jaune" style={{ width: `${fraction * 100}%` }} />
       </div>
-      <p className="mt-1 text-[11px] text-gris">
-        {dureeCycle === 60_000
-          ? 'Cycle accéléré pour la démonstration : chaque minute, les votes sont agrégés et les priorités reclassées.'
+      <p className="mx-auto w-full max-w-3xl px-3 py-1 text-[10px] text-gris lg:max-w-5xl">
+        {etat.cycleAccelere
+          ? 'Mode démonstration : chaque minute, les votes sont agrégés et les priorités reclassées.'
           : 'Chaque heure, les votes sont agrégés, les priorités reclassées et le journal publié.'}
-      </p>
-    </div>
-  );
-}
-
-/** « Combien sommes-nous ? » — le premier chiffre de l'écran. */
-function CompteurCitoyens() {
-  const { etat, maintenant } = useRevolution();
-  const stats = useMemo(() => statsGlobales(etat), [etat]);
-  const actifs = stats.citoyensActifs + Math.floor((maintenant % 3600000) / 9000);
-  return (
-    <div className="rounded-2xl border border-bord bg-carte px-4 py-3 text-center">
-      <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-gris">Combien sommes-nous ?</p>
-      <p key={actifs} className="monte affiche text-3xl text-jaune sm:text-5xl">
-        {nombre(actifs)}
-      </p>
-      <p className="mt-1 text-xs font-bold uppercase tracking-wide text-gris">
-        citoyens actifs · {nombre(stats.votesTotaux)} votes exprimés
       </p>
     </div>
   );
@@ -97,6 +84,7 @@ function Application() {
 
   const listeExigences = exigences(etat);
   const nonLues = etat.notifications.filter((n) => !n.lu);
+  const enAttente = etat.sujets.filter((s) => s.statut === 'en-attente').length;
   const rdvAujourdhui = etat.rendezVous.find((rdv) => rdv.statut === 'officiel' && joursRestants(rdv.date) === 0);
 
   const nav: ValeurNav = {
@@ -117,86 +105,97 @@ function Application() {
     },
   };
 
+  const pastille = (v: Vue): number =>
+    v === 'notifications' ? nonLues.length : v === 'attente' ? enAttente : v === 'rendez-vous' ? listeExigences.length : 0;
+
   return (
     <ProviderNav valeur={nav}>
       <div className="min-h-screen bg-fond pb-32 text-texte">
-        {/* ------------------------------- L'en-tête ------------------------------ */}
-        <header className="border-b-4 border-b-jaune px-4 pt-5 pb-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h1 className="affiche text-3xl text-texte sm:text-5xl">
-                À force de tirer sur le fil du peuple,
-                <span className="block text-jaune">il casse.</span>
-              </h1>
-              <p className="mt-2 max-w-2xl text-sm text-gris">
-                La démocratie continue : on propose, on vote, on priorise. Le résultat devient la position du peuple
-                avant chaque rendez-vous avec l’État.
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
+        {/* ================================ L'AFFICHE ============================== */}
+        <header className="relative overflow-hidden border-b-[3px] border-bord bg-fond">
+          <div className="flex h-2 w-full">
+            <div className="h-full w-2/3 bg-jaune" />
+            <div className="h-full w-1/3 bg-rouge" />
+          </div>
+
+          <div className="mx-auto w-full max-w-3xl px-3 py-4 lg:max-w-5xl">
+            {/* L'affiche : le slogan respire sur toute la largeur, même sur un petit téléphone. */}
+            <h1 className="affiche-large text-[clamp(1.65rem,7.2vw,3.6rem)] text-texte [text-wrap:balance]">
+              À force de tirer sur le fil du peuple,{' '}
+              <span className="mt-1 inline-block bg-jaune px-2 py-1 text-black">il casse.</span>
+            </h1>
+
+            {/* La rangée des raccourcis : mon compte à gauche, la cloche et les lieux à droite. */}
+            <div className="mt-3 flex items-stretch gap-2">
+              <button
+                type="button"
+                onClick={() => nav.aller({ vue: 'profil' })}
+                className="flex min-h-[3.25rem] min-w-0 flex-1 items-center justify-between gap-2 rounded-xl border-[3px] border-bord bg-carte px-3 py-2 text-left"
+              >
+                <span className="affiche truncate text-sm text-texte">
+                  {etat.citoyen ? `👤 ${etat.citoyen.pseudo}` : '👤 Je suis le peuple — s’identifier'}
+                </span>
+                <span className="flex shrink-0 items-center gap-1.5">
+                  {etat.citoyen ? (
+                    <Badge
+                      ton={etat.citoyen.badge === 'verifie' ? 'rouge' : etat.citoyen.badge === 'jeune' ? 'vert' : 'jaune'}
+                    >
+                      {etat.citoyen.badge === 'verifie' ? '✔ vérifié' : etat.citoyen.badge === 'jeune' ? '🌱 jeune' : 'citoyen'}
+                    </Badge>
+                  ) : (
+                    <Badge ton="jaune">15 s</Badge>
+                  )}
+                  <span className="text-gris">→</span>
+                </span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => nav.aller({ vue: 'notifications' })}
-                className="relative rounded-xl border border-bord bg-carte px-3 py-2 text-xl"
+                className="relative flex min-h-[3.25rem] w-[3.25rem] shrink-0 items-center justify-center rounded-xl border-[3px] border-bord bg-carte text-2xl"
                 title="Centre de notifications"
               >
                 🔔
                 {nonLues.length > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 rounded-full bg-rouge px-1.5 py-0.5 text-[10px] font-black text-white">
+                  <span className="absolute -top-2 -right-2 rounded-full bg-rouge px-1.5 py-0.5 text-[11px] font-black text-white">
                     {nonLues.length}
                   </span>
                 )}
               </button>
               <button
                 type="button"
-                onClick={() => nav.aller({ vue: 'profil' })}
-                className="rounded-xl border border-bord bg-carte px-3 py-2 text-left"
-                title="Profil et réglages"
+                onClick={() => nav.aller({ vue: 'sections' })}
+                className="flex min-h-[3.25rem] w-[3.25rem] shrink-0 items-center justify-center rounded-xl border-[3px] border-bord bg-carte text-2xl"
+                title="Sections locales"
               >
-                <span className="block text-[11px] font-bold uppercase tracking-wide text-gris">Citoyen</span>
-                <span className="affiche text-sm text-texte">
-                  {etat.citoyen ? etat.citoyen.pseudo : 'S’identifier'}
-                </span>
-                {etat.citoyen && (
-                  <span className="mt-1 block">
-                    <Badge ton={etat.citoyen.badge === 'verifie' ? 'rouge' : etat.citoyen.badge === 'jeune' ? 'vert' : 'jaune'}>
-                      {etat.citoyen.badge === 'verifie'
-                        ? '✔ Citoyen vérifié'
-                        : etat.citoyen.badge === 'jeune'
-                          ? '🌱 Jeune citoyen'
-                          : 'Citoyen'}
-                    </Badge>
-                  </span>
-                )}
+                🏛️
               </button>
-            </div>
-          </div>
-
-          <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-center">
-            <CompteurCitoyens />
-            <div className="flex flex-wrap gap-2">
-              <GrosBouton variante="neutre" onClick={() => nav.aller({ vue: 'sections' })}>
-                🏛️ Sections
-              </GrosBouton>
-              <GrosBouton variante="neutre" onClick={() => nav.aller({ vue: 'fil' })}>
-                🗺️ Le fil du peuple
-              </GrosBouton>
+              <button
+                type="button"
+                onClick={() => nav.aller({ vue: 'fil' })}
+                className="flex min-h-[3.25rem] w-[3.25rem] shrink-0 items-center justify-center rounded-xl border-[3px] border-bord bg-carte text-2xl"
+                title="Le fil du peuple — carte de France"
+              >
+                🗺️
+              </button>
             </div>
           </div>
         </header>
 
+        {/* ============================== JOUR J ==================================== */}
         {rdvAujourdhui && (
-          <div className="clignote border-b border-jaune bg-jaune px-4 py-3 text-center">
-            <p className="affiche text-black text-base sm:text-lg">
-              📅 Rendezvous AUJOURD’HUI — le cahier est verrouillé à 18 h
+          <div className="clignote border-b-[3px] border-jaune bg-jaune px-3 py-3 text-center">
+            <p className="affiche mx-auto max-w-3xl text-sm text-black sm:text-lg lg:max-w-5xl">
+              📅 Rendez-vous AUJOURD’HUI — cahier verrouillé à {REGLAGES.verrouillageHeure} h :{' '}
+              {listeExigences.length} exigences vont être présentées au nom du peuple
             </p>
           </div>
         )}
 
         <BandeauCycle />
 
-        {/* ------------------------------- Le contenu ----------------------------- */}
-        <main className="px-4 py-5">
+        {/* ================================ LE CONTENU ============================= */}
+        <main className="mx-auto w-full max-w-3xl px-3 py-4 lg:max-w-5xl">
           {vue === 'accueil' && <Accueil />}
           {vue === 'sujet' && <VueSujet />}
           {vue === 'journal' && <Journal />}
@@ -208,44 +207,42 @@ function Application() {
           {vue === 'profil' && <Profil />}
         </main>
 
-        {/* ------------------------- Bouton flottant (proposer) ------------------- */}
+        {/* ============================== PROPOSER UN SUJET ======================== */}
         {(vue === 'accueil' || vue === 'attente') && (
           <button
             type="button"
             onClick={() => setProposeOuvert(true)}
-            className="affiche fixed right-4 bottom-24 z-30 rounded-2xl bg-jaune px-5 py-4 text-sm text-black shadow-lg shadow-black/40 sm:text-base"
+            className="affiche ombre-dure-jaune fixed right-3 bottom-[6.5rem] z-30 min-h-[3.5rem] rounded-2xl bg-jaune px-4 py-3 text-sm text-black sm:right-5"
           >
-            + Proposer un sujet
+            ＋ Proposer un sujet
           </button>
         )}
 
-        {/* ---------------------------- Barre de navigation ----------------------- */}
-        <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-bord bg-carte/95 backdrop-blur">
-          <div className="mx-auto flex max-w-3xl items-stretch justify-between px-1 py-1">
-            {ONGLETS.map((onglet) => {
-              const actif = vue === onglet.vue;
-              const pastille =
-                onglet.vue === 'notifications'
-                  ? nonLues.length
-                  : onglet.vue === 'attente'
-                    ? etat.sujets.filter((s) => s.statut === 'en-attente').length
-                    : onglet.vue === 'rendez-vous'
-                      ? listeExigences.length
-                      : 0;
+        {/* ============================ LA BARRE DU BAS ============================ */}
+        <nav className="fixed inset-x-0 bottom-0 z-20 border-t-[3px] border-bord bg-carte/95 backdrop-blur">
+          <div className="barre-basse mx-auto flex w-full max-w-3xl items-stretch justify-between px-1 pt-1 lg:max-w-5xl">
+            {ONGLETS.map((o) => {
+              const actif = vue === o.vue;
+              const n = pastille(o.vue);
               return (
                 <button
-                  key={onglet.vue}
+                  key={o.vue}
                   type="button"
-                  onClick={() => nav.aller({ vue: onglet.vue })}
-                  className={`relative flex flex-1 flex-col items-center gap-0.5 rounded-xl px-1 py-2 text-[10px] font-bold uppercase tracking-wide ${
-                    actif ? 'bg-carte2 text-jaune' : 'text-gris'
+                  onClick={() => nav.aller({ vue: o.vue })}
+                  className={`relative flex flex-1 flex-col items-center gap-0.5 rounded-xl px-1 py-1.5 ${
+                    actif ? 'bg-carte2' : ''
                   }`}
                 >
-                  <span className="text-lg">{onglet.emoji}</span>
-                  {onglet.label}
-                  {pastille > 0 && (
-                    <span className="absolute top-1 right-2 rounded-full bg-rouge px-1 text-[9px] font-black text-white">
-                      {pastille}
+                  <span className={`text-2xl leading-none ${actif ? '' : 'opacity-60'}`}>{o.emoji}</span>
+                  <span
+                    className={`affiche text-[10px] leading-none ${actif ? 'text-jaune' : 'text-gris'}`}
+                  >
+                    {o.label}
+                  </span>
+                  {actif && <span className="absolute inset-x-3 -top-1 h-1 rounded-full bg-jaune" />}
+                  {n > 0 && (
+                    <span className="absolute top-0 right-1 rounded-full bg-rouge px-1.5 text-[10px] font-black text-white">
+                      {n}
                     </span>
                   )}
                 </button>
@@ -255,9 +252,7 @@ function Application() {
         </nav>
 
         {proposeOuvert && <ProposerSujet onFermer={() => setProposeOuvert(false)} />}
-        {identiteDemandee && (
-          <Onboarding raison={raisonIdentite} onFermer={() => setIdentiteDemandee(false)} />
-        )}
+        {identiteDemandee && <Onboarding raison={raisonIdentite} onFermer={() => setIdentiteDemandee(false)} />}
       </div>
     </ProviderNav>
   );

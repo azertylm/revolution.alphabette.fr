@@ -5,9 +5,10 @@ import type { Sujet } from '../types';
 import { GrosBouton, Panneau } from '../ui';
 
 /* ==========================================================================
-   L'étape « Où investir ? » : 100 points de budget à répartir aux curseurs.
-   Seules les mesures approuvées (OUI) peuvent recevoir des points, et la
-   somme ne peut jamais dépasser 100 : les curseurs se bloquent tout seuls.
+   OÙ INVESTIR — 100 points à répartir, au doigt.
+   Un curseur géant ET des boutons −5 / −1 / +1 / +5 : sur téléphone, on tape
+   plutôt qu'on ne glisse. Seules les mesures approuvées (OUI) en reçoivent, et
+   la somme ne dépasse jamais 100 : les boutons se bloquent tout seuls.
    ========================================================================== */
 
 export function CurseursBudget({ sujet }: { sujet: Sujet }) {
@@ -20,14 +21,12 @@ export function CurseursBudget({ sujet }: { sujet: Sujet }) {
   }, [sujet.id, etat.mesBudgets]);
 
   const eligibles = useMemo(
-    () =>
-      sujet.questions.map((q) => etat.mesVotes[`${sujet.id}:${q.id}`] === 'oui'),
+    () => sujet.questions.map((q) => etat.mesVotes[`${sujet.id}:${q.id}`] === 'oui'),
     [sujet.questions, etat.mesVotes, sujet.id],
   );
 
   const total = points.reduce((acc, p) => acc + p, 0);
   const restant = REGLAGES.budgetTotal - total;
-  const rienASceller = total === 0;
 
   const changer = (index: number, valeur: number) => {
     setScelle(false);
@@ -39,6 +38,8 @@ export function CurseursBudget({ sujet }: { sujet: Sujet }) {
       return suivants;
     });
   };
+
+  const ajouter = (index: number, delta: number) => changer(index, (points[index] ?? 0) + delta);
 
   const repartirEgalement = () => {
     setScelle(false);
@@ -55,78 +56,122 @@ export function CurseursBudget({ sujet }: { sujet: Sujet }) {
 
   return (
     <div className="space-y-4">
-      <Panneau accent="jaune">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-gris">Reste à répartir</p>
-            <p className="affiche text-6xl text-jaune sm:text-7xl">
-              {restant}
-              <span className="ml-2 text-2xl text-gris">/ {REGLAGES.budgetTotal}</span>
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <GrosBouton variante="neutre" onClick={repartirEgalement}>
-              ⚖️ Répartir également
-            </GrosBouton>
-            <GrosBouton variante="neutre" onClick={() => { setPoints(sujet.questions.map(() => 0)); setScelle(false); }}>
-              ↺ Tout remettre à zéro
-            </GrosBouton>
-          </div>
+      {/* --------------------------- LE COMPTEUR DE POINTS ----------------------- */}
+      <div className="bloc bloc-jaune ombre-dure-jaune p-4 text-center">
+        <p className="text-[11px] font-black uppercase tracking-[0.25em] text-gris">Il te reste</p>
+        <p className="affiche-large text-[4rem] leading-none text-jaune sm:text-[5.5rem]">
+          {restant}
+          <span className="text-2xl text-gris"> / {REGLAGES.budgetTotal}</span>
+        </p>
+        <p className="mt-1 text-xs font-black uppercase tracking-wide text-gris">points de budget à placer</p>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <GrosBouton variante="neutre" onClick={repartirEgalement}>
+            ⚖️ Répartir également
+          </GrosBouton>
+          <GrosBouton
+            variante="neutre"
+            onClick={() => {
+              setPoints(sujet.questions.map(() => 0));
+              setScelle(false);
+            }}
+          >
+            ↺ Tout à zéro
+          </GrosBouton>
         </div>
-        <p className="mt-2 text-xs text-gris">
+      </div>
+
+      <Panneau>
+        <p className="text-xs text-gris">
           Seules les mesures que tu as approuvées (OUI) peuvent recevoir des points. Le peuple arbitre comme un vrai
-          budget : {REGLAGES.budgetTotal} points en tout, pas un de plus.
+          budget : {REGLAGES.budgetTotal} points, pas un de plus.
         </p>
       </Panneau>
 
-      {sujet.questions.map((q, i) => (
-        <div
-          key={q.id}
-          className={`rounded-2xl border p-4 ${
-            eligibles[i] ? 'border-bord bg-carte' : 'border-bord bg-carte/50 opacity-60'
-          }`}
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="affiche text-sm text-texte">{q.poste}</p>
-              <p className="text-[11px] text-gris">{q.texte}</p>
-            </div>
-            <span className={`affiche text-2xl ${eligibles[i] ? 'text-jaune' : 'text-gris'}`}>{points[i] ?? 0}</span>
-          </div>
-          <input
-            type="range"
-            className="curseur mt-3"
-            min={0}
-            max={REGLAGES.budgetTotal}
-            value={points[i] ?? 0}
-            disabled={!eligibles[i]}
-            onChange={(e) => changer(i, Number(e.target.value))}
-            aria-label={`Budget pour ${q.poste}`}
-          />
-          {!eligibles[i] && (
-            <p className="text-[11px] font-bold text-gris">
-              {etat.mesVotes[`${sujet.id}:${q.id}`]
-                ? 'Mesure refusée (NON) : tu ne peux pas y investir de points.'
-                : 'Vote d’abord cette question (OUI) pour pouvoir y investir des points.'}
-            </p>
-          )}
-          {eligibles[i] && <p className="text-[11px] text-gris">{Math.round(q.budgetMoyen)} pts en moyenne chez les votants</p>}
-        </div>
-      ))}
+      {/* ------------------------------ LES MESURES ------------------------------ */}
+      <div className="grid gap-3 lg:grid-cols-2">
+        {sujet.questions.map((q, i) => {
+          const actif = eligibles[i];
+          const valeur = points[i] ?? 0;
+          return (
+            <div key={q.id} className={`bloc p-4 ${actif ? '' : 'opacity-55'}`}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="affiche text-base text-texte sm:text-lg">{q.poste}</p>
+                  <p className="mt-1 text-[11px] text-gris">{q.texte}</p>
+                </div>
+                <p className={`affiche-large shrink-0 text-4xl ${actif ? 'text-jaune' : 'text-gris'}`}>{valeur}</p>
+              </div>
 
-      <div className="flex flex-wrap items-center gap-3">
+              <div className="mt-3 flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={!actif || valeur <= 0}
+                  onClick={() => ajouter(i, -5)}
+                  className="affiche min-h-[3.25rem] w-14 rounded-xl border-[3px] border-bord bg-carte2 text-sm text-texte disabled:opacity-30"
+                >
+                  −5
+                </button>
+                <button
+                  type="button"
+                  disabled={!actif || valeur <= 0}
+                  onClick={() => ajouter(i, -1)}
+                  className="affiche min-h-[3.25rem] w-14 rounded-xl border-[3px] border-bord bg-carte2 text-sm text-texte disabled:opacity-30"
+                >
+                  −1
+                </button>
+                <input
+                  type="range"
+                  className="curseur mx-1 flex-1"
+                  min={0}
+                  max={REGLAGES.budgetTotal}
+                  value={valeur}
+                  disabled={!actif}
+                  onChange={(e) => changer(i, Number(e.target.value))}
+                  aria-label={`Budget pour ${q.poste}`}
+                />
+                <button
+                  type="button"
+                  disabled={!actif || restant <= 0}
+                  onClick={() => ajouter(i, 1)}
+                  className="affiche min-h-[3.25rem] w-14 rounded-xl bg-jaune text-sm text-black disabled:opacity-30"
+                >
+                  +1
+                </button>
+                <button
+                  type="button"
+                  disabled={!actif || restant <= 0}
+                  onClick={() => ajouter(i, 5)}
+                  className="affiche min-h-[3.25rem] w-14 rounded-xl bg-jaune text-sm text-black disabled:opacity-30"
+                >
+                  +5
+                </button>
+              </div>
+
+              <p className="mt-2 text-[11px] text-gris">
+                {!actif
+                  ? etat.mesVotes[`${sujet.id}:${q.id}`]
+                    ? '🚫 Mesure refusée (NON) : aucun point possible.'
+                    : 'Vote d’abord cette question (OUI) pour y investir.'
+                  : `${Math.round(q.budgetMoyen)} pts en moyenne chez les votants`}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="space-y-2">
         <GrosBouton
-          variante="jaune"
-          disabled={rienASceller}
+          className="w-full"
+          disabled={total === 0}
           onClick={() => {
             agir({ type: 'budget', sujetId: sujet.id, points });
             setScelle(true);
           }}
         >
-          📤 Envoyer mon budget au peuple
+          📤 Envoyer mon budget au peuple {total > 0 ? `(${total} pts)` : ''}
         </GrosBouton>
-        {scelle && <span className="text-xs font-bold text-jaune">✔ Budget scellé — modifiable jusqu’à la prochaine Refonte.</span>}
-        {rienASceller && <span className="text-xs text-gris">Déplace au moins un curseur.</span>}
+        {scelle && <p className="affiche text-xs text-jaune">✔ Budget scellé — modifiable jusqu’à la prochaine Refonte</p>}
+        {total === 0 && <p className="text-xs text-gris">Déplace au moins un curseur ou touche +1 / +5.</p>}
       </div>
     </div>
   );
