@@ -8,6 +8,7 @@ import { Badge } from './ui';
 import { Onboarding } from './composants/Onboarding';
 import { ProposerSujet } from './composants/ProposerSujet';
 import { Accueil } from './vues/Accueil';
+import { Assemblee } from './vues/Assemblee';
 import { Attente } from './vues/Attente';
 import { FilDuPeuple } from './vues/FilDuPeuple';
 import { Journal } from './vues/Journal';
@@ -25,6 +26,7 @@ import { VueSujet } from './vues/VueSujet';
 const ONGLETS: { vue: Vue; emoji: string; label: string }[] = [
   { vue: 'accueil', emoji: '✊', label: 'Voter' },
   { vue: 'attente', emoji: '⚖️', label: 'Juger' },
+  { vue: 'assemblee', emoji: '🏛️', label: 'Assemblée' },
   { vue: 'journal', emoji: '📜', label: 'Journal' },
   { vue: 'rendez-vous', emoji: '📅', label: 'Rendez-vous' },
   { vue: 'notifications', emoji: '🔔', label: 'Alertes' },
@@ -164,9 +166,9 @@ function Application() {
               </button>
               <button
                 type="button"
-                onClick={() => nav.aller({ vue: 'sections' })}
+                onClick={() => nav.aller({ vue: 'assemblee' })}
                 className="flex min-h-[3.25rem] w-[3.25rem] shrink-0 items-center justify-center rounded-xl border-[3px] border-bord bg-carte text-2xl"
-                title="Sections locales"
+                title="L'Assemblée du peuple — sections locales et administrateurs élus"
               >
                 🏛️
               </button>
@@ -202,6 +204,7 @@ function Application() {
           {vue === 'rendez-vous' && <RendezVous />}
           {vue === 'attente' && <Attente />}
           {vue === 'notifications' && <Notifications />}
+          {vue === 'assemblee' && <Assemblee />}
           {vue === 'sections' && <Sections />}
           {vue === 'fil' && <FilDuPeuple />}
           {vue === 'profil' && <Profil />}
@@ -229,13 +232,13 @@ function Application() {
                   key={o.vue}
                   type="button"
                   onClick={() => nav.aller({ vue: o.vue })}
-                  className={`relative flex flex-1 flex-col items-center gap-0.5 rounded-xl px-1 py-1.5 ${
+                  className={`relative flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-xl px-1 py-1.5 ${
                     actif ? 'bg-carte2' : ''
                   }`}
                 >
                   <span className={`text-2xl leading-none ${actif ? '' : 'opacity-60'}`}>{o.emoji}</span>
                   <span
-                    className={`affiche text-[10px] leading-none ${actif ? 'text-jaune' : 'text-gris'}`}
+                    className={`affiche w-full truncate text-center text-[10px] leading-none ${actif ? 'text-jaune' : 'text-gris'}`}
                   >
                     {o.label}
                   </span>

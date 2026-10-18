@@ -100,6 +100,46 @@ export interface Sujet {
 
 export type RolePoste = 'coordinateur' | 'moderateur' | 'tresorier';
 
+/* --------------------------------------------------------------------------
+   L'Assemblée du peuple.
+   Vingt administrateurs par région, élus en continu, renouvelés par roulement.
+   Aucun d'entre eux ne peut toucher à un vote, une question ou un résultat :
+   ils organisent, modèrent et transmettent — c'est tout.
+   -------------------------------------------------------------------------- */
+
+/** Un siège d'administrateur pourvu, avec ses dates et son soutien. */
+export interface Mandat {
+  id: string;
+  /** Identifiant de la région (voir regions.ts). */
+  regionId: string;
+  /** Nom affiché de la région. */
+  territoire: string;
+  /** Pseudo du titulaire. */
+  titulaire: string;
+  /** ISO : installation, puis fin de mandat prévue. */
+  debut: string;
+  fin: string;
+  /** Soutiens obtenus au moment de l'élection. */
+  voix: number;
+}
+
+/** Un volontaire qui attend un siège dans sa région. */
+export interface CandidatAdmin {
+  id: string;
+  regionId: string;
+  territoire: string;
+  pseudo: string;
+  /** Candidature en une phrase, aucun CV. */
+  phrase: string;
+  /** Soutiens citoyens. */
+  voix: number;
+  /** Réserves exprimées (affichées, jamais décisives). */
+  reserves: number;
+  inscritLe: string;
+  /** Déjà passé par un mandat : les nouveaux sont servis d'abord. */
+  dejaElu: boolean;
+}
+
 export interface Candidat {
   id: string;
   pseudo: string;
@@ -124,8 +164,12 @@ export interface Section {
   niveau: Niveau;
   territoire: string;
   citoyensActifs: number;
+  /** Citoyens inscrits à la section (adhésion en un clic). */
+  membres: number;
   roles: RolePourvu[];
   candidats: Candidat[];
+  /** ISO : ouverture de la section (automatique dès que la demande monte). */
+  ouverteLe?: string;
 }
 
 export interface RendezVous {
@@ -167,7 +211,7 @@ export interface EntreeJournal {
   id: string;
   date: string;
   texte: string;
-  type: 'montee' | 'descente' | 'question' | 'exigence' | 'ecartee' | 'refonte';
+  type: 'montee' | 'descente' | 'question' | 'exigence' | 'ecartee' | 'refonte' | 'assemblee';
 }
 
 export interface Citoyen {
@@ -190,6 +234,14 @@ export interface Etat {
   sujets: Sujet[];
   sections: Section[];
   rendezVous: RendezVous[];
+  /** Sections que TU as rejointes (adhésion en un clic). */
+  adhesions: string[];
+  /** Les sièges d'administrateurs pourvus, toutes régions confondues. */
+  mandats: Mandat[];
+  /** Les volontaires qui attendent un siège. */
+  candidatsAdmin: CandidatAdmin[];
+  /** Candidats de l'Assemblée que TU as déjà soutenus. */
+  soutiensAdmin: string[];
   /** `${sujetId}:${questionId}` → choix. */
   mesVotes: Record<string, ChoixVote>;
   /** Répartition budgétaire envoyée, par sujet. */

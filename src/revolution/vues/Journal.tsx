@@ -15,6 +15,7 @@ const TEINTES: Record<string, { emoji: string; ton: 'jaune' | 'rouge' | 'gris' |
   question: { emoji: '🔁', ton: 'jaune' },
   exigence: { emoji: '✊', ton: 'rouge' },
   ecartee: { emoji: '🚫', ton: 'rouge' },
+  assemblee: { emoji: '🏛️', ton: 'jaune' },
 };
 
 export function Journal() {

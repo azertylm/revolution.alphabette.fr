@@ -1,4 +1,5 @@
 import { categorie } from './categories';
+import { faireVivreAssemblee } from './assemblee';
 import { REGLAGES } from './reglages';
 import { nomRegion } from './regions';
 import type { Etat, EntreeJournal, Notification, Question, RendezVous, Sujet } from './types';
@@ -313,11 +314,18 @@ export function refonte(etat: Etat): Etat {
     { date: iso, votants: agreges, exigences: exigences({ ...etat, sujets }).length },
   ].slice(-24);
 
+  // 5. L'Assemblée du peuple : échéances, volontaires, sièges installés au fur
+  //    et à mesure, sections qui s'ouvrent d'elles-mêmes. Tout est automatique.
+  const assemblee = faireVivreAssemblee(etat, iso);
+
   return {
     ...etat,
     sujets,
-    journal: [...journal, ...etat.journal].slice(0, 200),
-    notifications: [...nouvelles, ...etat.notifications].slice(0, 120),
+    sections: assemblee.sections,
+    mandats: assemblee.mandats,
+    candidatsAdmin: assemblee.candidatsAdmin,
+    journal: [...journal, ...assemblee.journal, ...etat.journal].slice(0, 200),
+    notifications: [...assemblee.notifications, ...nouvelles, ...etat.notifications].slice(0, 120),
     historique,
     cycles: etat.cycles + 1,
     derniereRefonte: iso,

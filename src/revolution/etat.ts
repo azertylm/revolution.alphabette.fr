@@ -1,5 +1,6 @@
 import { categorie, type CategorieId } from './categories';
-import { etatInitial } from './donnees';
+import { nomAssemblee } from './assemblee';
+import { adherentsParDefaut, etatInitial } from './donnees';
 import { notificationsRendezVous, refonte } from './moteur';
 import { REGLAGES } from './reglages';
 import type { ChoixVote, Citoyen, Etat, Niveau, Question, ReponseEtat, Sujet } from './types';
@@ -18,6 +19,10 @@ export type Action =
   | { type: 'moderer'; sujetId: string; choix: 'valider' | 'rejeter' }
   | { type: 'signaler'; sujetId: string; motif: string }
   | { type: 'soutenir-candidat'; sectionId: string; candidatId: string; choix: ChoixVote }
+  | { type: 'rejoindre-section'; sectionId: string }
+  | { type: 'quitter-section'; sectionId: string }
+  | { type: 'candidater'; phrase: string }
+  | { type: 'soutenir-administrateur'; candidatId: string; choix: ChoixVote }
   | { type: 'message'; sujetId: string; texte: string }
   | {
       type: 'declarer-rdv';
@@ -52,7 +57,21 @@ export function chargerEtat(): Etat {
     if (!brut) return etatInitial();
     const parse = JSON.parse(brut) as Partial<Etat>;
     if (!parse.sujets || !parse.sujets.length) return etatInitial();
-    return { ...etatInitial(), ...parse } as Etat;
+    const base = etatInitial();
+    const etat = { ...base, ...parse } as Etat;
+    // Un état enregistré avant l'Assemblée n'a ni sièges ni sections complètes :
+    // on complète les champs manquants sans jamais écraser le reste.
+    return {
+      ...etat,
+      sections: etat.sections.map((s) => ({
+        ...s,
+        membres: typeof s.membres === 'number' ? s.membres : adherentsParDefaut(s.id),
+      })),
+      adhesions: etat.adhesions ?? [],
+      mandats: etat.mandats ?? base.mandats,
+      candidatsAdmin: etat.candidatsAdmin ?? base.candidatsAdmin,
+      soutiensAdmin: etat.soutiensAdmin ?? [],
+    };
   } catch {
     return etatInitial();
   }
@@ -265,6 +284,118 @@ export function reducer(etat: Etat, action: Action): Etat {
         mesElections: etat.mesElections.includes(action.candidatId)
           ? etat.mesElections
           : [...etat.mesElections, action.candidatId],
+      };
+    }
+
+    case 'rejoindre-section': {
+      const section = etat.sections.find((s) => s.id === action.sectionId);
+      if (!section || etat.adhesions.includes(section.id)) return etat;
+      const iso = new Date().toISOString();
+      return {
+        ...etat,
+        adhesions: [...etat.adhesions, section.id],
+        sections: etat.sections.map((s) =>
+          s.id === section.id ? { ...s, membres: (s.membres ?? 0) + 1 } : s,
+        ),
+        journal: [
+          {
+            id: `j-${Math.random().toString(36).slice(2, 9)}`,
+            date: iso,
+            type: 'assemblee',
+            texte: `🏛️ ${pseudoDe(etat)} rejoint la section de ${section.territoire}. Les sections locales sont ouvertes à tous, sans carte ni cotisation.`,
+          },
+          ...etat.journal,
+        ],
+        notifications: [
+          {
+            id: `notif-section-${section.id}`,
+            date: iso,
+            type: 'mobilisation',
+            titre: `🏛️ Tu as rejoint la section ${section.territoire}`,
+            texte:
+              'Tu peux maintenant soutenir les volontaires, suivre les mandats et proposer des réunions locales. Rien de plus : ton vote reste secret et personnel.',
+            urgent: false,
+            lu: false,
+            cible: { vue: 'assemblee' },
+          },
+          ...etat.notifications,
+        ],
+      };
+    }
+
+    case 'quitter-section': {
+      if (!etat.adhesions.includes(action.sectionId)) return etat;
+      return {
+        ...etat,
+        adhesions: etat.adhesions.filter((id) => id !== action.sectionId),
+        sections: etat.sections.map((s) =>
+          s.id === action.sectionId ? { ...s, membres: Math.max(0, (s.membres ?? 0) - 1) } : s,
+        ),
+      };
+    }
+
+    case 'candidater': {
+      if (!etat.citoyen) return etat;
+      const regionId = etat.citoyen.region || 'national';
+      const pseudo = pseudoDe(etat);
+      if (etat.candidatsAdmin.some((c) => c.regionId === regionId && c.pseudo === pseudo)) return etat;
+      const iso = new Date().toISOString();
+      const territoire = nomAssemblee(regionId);
+      return {
+        ...etat,
+        candidatsAdmin: [
+          ...etat.candidatsAdmin,
+          {
+            id: `admin-${Date.now().toString(36)}`,
+            regionId,
+            territoire,
+            pseudo,
+            phrase: action.phrase,
+            // Tes voisins de section te soutiennent déjà : une candidature
+            // seule ne sert à rien, un soutien oui.
+            voix: 4,
+            reserves: 0,
+            inscritLe: iso,
+            dejaElu: false,
+          },
+        ],
+        journal: [
+          {
+            id: `j-${Math.random().toString(36).slice(2, 9)}`,
+            date: iso,
+            type: 'assemblee',
+            texte: `✊ ${pseudo} se porte volontaire pour l'Assemblée de ${territoire} : « ${action.phrase} »`,
+          },
+          ...etat.journal,
+        ],
+        notifications: [
+          {
+            id: `notif-candidature-${Date.now().toString(36)}`,
+            date: iso,
+            type: 'mobilisation',
+            titre: `✊ Ta candidature est enregistrée`,
+            texte: `Tu es candidat(e) à l'Assemblée de ${territoire}. Dès que le soutien dépasse le seuil, tu es installé(e) automatiquement — sans tract, sans meeting, sans argent.`,
+            urgent: false,
+            lu: false,
+            cible: { vue: 'assemblee' },
+          },
+          ...etat.notifications,
+        ],
+      };
+    }
+
+    case 'soutenir-administrateur': {
+      if (etat.soutiensAdmin.includes(action.candidatId)) return etat;
+      if (etat.soutiensAdmin.length >= REGLAGES.soutiensParCitoyen) return etat;
+      return {
+        ...etat,
+        candidatsAdmin: etat.candidatsAdmin.map((c) => {
+          if (c.id !== action.candidatId) return c;
+          if (action.choix === 'oui') return { ...c, voix: c.voix + 1 };
+          if (action.choix === 'non') return { ...c, reserves: c.reserves + 1 };
+          return c;
+        }),
+        soutiensAdmin: [...etat.soutiensAdmin, action.candidatId],
       };
     }
 

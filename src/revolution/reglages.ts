@@ -35,6 +35,26 @@ export const REGLAGES = {
 
   /** Seuil de « bascule » qui rend une alerte de vote urgente. */
   seuilBascule: 63,
+
+  /* ----------------------------- L'Assemblée ------------------------------ */
+  /** Administrateurs à pourvoir dans chaque région. */
+  siegesParRegion: 20,
+  /** Durée d'un mandat d'administrateur (6 mois). */
+  mandatMs: 180 * 24 * 60 * 60 * 1000,
+  /**
+   * Sièges installés au maximum à chaque refonte : l'Assemblée se remplit « au
+   * fur et à mesure », jamais d'un coup. Une région neuve se remplit donc en
+   * plusieurs heures, une région à l'abandon se répare toute seule.
+   */
+  installationsParRefonte: 2,
+  /** Soutiens à partir desquels un volontaire est éligible. */
+  seuilEligibilite: 1,
+  /** Candidats soutenus au maximum par un même citoyen. */
+  soutiensParCitoyen: 5,
+  /** Volontaires nécessaires pour qu'une section locale s'ouvre toute seule. */
+  demandesPourOuvrir: 5,
+  /** Adhésions simulées ajoutées à chaque refonte (la communauté vit). */
+  adhesionsParRefonte: 3,
 } as const;
 
 /** Statuts possibles selon le niveau de consensus atteint. */

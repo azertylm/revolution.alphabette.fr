@@ -25,6 +25,37 @@ src/
   alphabette.app.ts   identité du site (nom, sous-titre, couleur, liens)
 ```
 
+## L'Assemblée du peuple — 20 administrateurs par région
+
+L'onglet **🏛️ Assemblée** (et le bouton 🏛️ de l'en-tête) réunit deux choses :
+
+- **les sections locales** — rejoindre la section de son territoire en un clic,
+  voir ses rôles (coordination, modération, trésorerie) et ses adhérents ;
+- **l'élection continue des administrateurs** — 20 sièges par région (plus
+  l'Assemblée nationale), installés *au fur et à mesure*, jamais d'un coup.
+
+**Tout est automatique.** Le citoyen ne fait que deux gestes : *rejoindre* sa
+section et *soutenir* des volontaires. À chaque Refonte (toutes les heures), la
+machine :
+
+1. libère les sièges dont le mandat arrive à échéance (6 mois, sans reconduction) ;
+2. inscrit de nouveaux volontaires ;
+3. fait évoluer les soutiens ;
+4. installe les sièges libres — **2 par Refonte au maximum**, toujours au
+   volontaire le mieux soutenu, dans l'assemblée la plus incomplète ;
+5. ouvre d'elle-même une section dès que 5 volontaires s'y manifestent ;
+6. donne la coordination de la section au premier administrateur élu.
+
+Tous les seuils sont dans **`src/revolution/reglages.ts`** (bloc
+« L'Assemblée ») : nombre de sièges, durée du mandat, sièges installés par
+refonte, seuil d'éligibilité, adhésions par refonte. Le moteur est dans
+`src/revolution/assemblee.ts` (fonctions pures), l'interface dans
+`src/revolution/vues/Assemblee.tsx`.
+
+**Garde-fou, inscrit dans le code et affiché dans l'interface :** un
+administrateur ne peut modifier ni un vote, ni une question, ni un résultat. Il
+organise les réunions, modère les échanges et porte le cahier du peuple.
+
 ## La base commune
 
 Le contenu de l'application se place à l'intérieur de `<AppShell>` :

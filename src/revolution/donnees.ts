@@ -1,8 +1,10 @@
 import type { ModeleQuestion } from './categories';
 import type {
   Candidat,
+  CandidatAdmin,
   EntreeJournal,
   Etat,
+  Mandat,
   MessageSection,
   Notification,
   Question,
@@ -11,6 +13,8 @@ import type {
   Sujet,
 } from './types';
 import { categorie } from './categories';
+import { ASSEMBLEES, PHRASES_CANDIDATURE, PRENOMS_VOLONTAIRES, nouveauPseudo } from './assemblee';
+import { REGLAGES } from './reglages';
 import { jourISO } from './outils';
 
 /* ==========================================================================
@@ -327,6 +331,7 @@ function creerSections(): Section[] {
       niveau: 'national',
       territoire: 'France',
       citoyensActifs: 2348912,
+      membres: 18420,
       roles: [
         { poste: 'coordinateur', titulaire: 'Citoyen #48231', electionLe: ilYA(40) },
         { poste: 'moderateur', titulaire: 'Camille_31', electionLe: ilYA(40) },
@@ -339,6 +344,7 @@ function creerSections(): Section[] {
       niveau: 'region',
       territoire: 'Occitanie',
       citoyensActifs: 184320,
+      membres: 2310,
       roles: [
         { poste: 'coordinateur', titulaire: 'Citoyen #74002', electionLe: ilYA(120) },
         { poste: 'moderateur', titulaire: 'Aline_V', electionLe: ilYA(120) },
@@ -354,6 +360,7 @@ function creerSections(): Section[] {
       niveau: 'region',
       territoire: 'Bretagne',
       citoyensActifs: 96410,
+      membres: 1188,
       roles: [{ poste: 'coordinateur', titulaire: 'Yann_29', electionLe: ilYA(60) }],
       candidats: [candidat('Yann_29', 'coordinateur', 'Élu depuis 6 mois, je représente déjà la section au conseil régional.', 320, 44, 88)],
     },
@@ -362,6 +369,7 @@ function creerSections(): Section[] {
       niveau: 'commune',
       territoire: 'Toulouse',
       citoyensActifs: 41230,
+      membres: 962,
       roles: [
         { poste: 'coordinateur', titulaire: 'Citoyen #33127', electionLe: ilYA(15) },
         { poste: 'moderateur', titulaire: 'Aline_V', electionLe: ilYA(15) },
@@ -374,6 +382,7 @@ function creerSections(): Section[] {
       niveau: 'commune',
       territoire: 'Brest',
       citoyensActifs: 12890,
+      membres: 388,
       roles: [{ poste: 'coordinateur', titulaire: 'Citoyen #51009', electionLe: ilYA(200) }],
       candidats: [candidat('Citoyen #51777', 'moderateur', 'Je propose de nettoyer les échanges hors-sujet, rien de plus.', 160, 30, 90)],
     },
@@ -382,6 +391,7 @@ function creerSections(): Section[] {
       niveau: 'region',
       territoire: 'Hauts-de-France',
       citoyensActifs: 122540,
+      membres: 1402,
       roles: [{ poste: 'coordinateur', titulaire: 'Citoyen #31002', electionLe: ilYA(180) }],
       candidats: [],
     },
@@ -390,6 +400,7 @@ function creerSections(): Section[] {
       niveau: 'region',
       territoire: 'Auvergne-Rhône-Alpes',
       citoyensActifs: 158770,
+      membres: 1893,
       roles: [{ poste: 'coordinateur', titulaire: 'Citoyen #22140', electionLe: ilYA(90) }],
       candidats: [],
     },
@@ -548,17 +559,107 @@ function creerNotifications(): Notification[] {
 }
 
 /* -------------------------------------------------------------------------- */
+/* L'Assemblée du peuple                                                        */
+/* -------------------------------------------------------------------------- */
+
+/** Sièges déjà pourvus au démarrage : l'Assemblée est en cours de constitution. */
+const SIEGES_DEJA_POURVUS: Record<string, number> = {
+  national: 14,
+  'ile-de-france': 15,
+  'auvergne-rhone-alpes': 12,
+  paca: 13,
+  bretagne: 11,
+  'nouvelle-aquitaine': 10,
+  occitanie: 17,
+  'hauts-de-france': 8,
+  'grand-est': 6,
+  normandie: 5,
+  'pays-de-la-loire': 4,
+  'centre-val-de-loire': 3,
+  'bourgogne-franche-comte': 3,
+  corse: 2,
+  guadeloupe: 2,
+  martinique: 1,
+  guyane: 1,
+  'la-reunion': 1,
+  mayotte: 1,
+};
+
+const JOUR_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * L'Assemblée de départ : jamais complète, jamais vide. Les mandats sont
+ * échelonnés dans le temps pour que le renouvellement soit continu, et des
+ * volontaires attendent déjà leur tour.
+ */
+function creerAssemblee(): { mandats: Mandat[]; candidatsAdmin: CandidatAdmin[] } {
+  const mandats: Mandat[] = [];
+  const candidatsAdmin: CandidatAdmin[] = [];
+  const pris = new Set<string>();
+
+  for (const a of ASSEMBLEES) {
+    const sieges = SIEGES_DEJA_POURVUS[a.id] ?? 0;
+    for (let i = 0; i < sieges; i++) {
+      const prenom = PRENOMS_VOLONTAIRES[(i * 7 + a.id.length * 3) % PRENOMS_VOLONTAIRES.length];
+      let pseudo = `${prenom}_${10 + ((i * 13 + a.id.length * 5) % 89)}`;
+      while (pris.has(pseudo)) pseudo = `${prenom}_${10 + Math.floor(Math.random() * 89)}`;
+      pris.add(pseudo);
+      const jours = i === 0 ? 179.5 : (179 / Math.max(1, sieges)) * i;
+      const debut = new Date(Date.now() - jours * JOUR_MS).toISOString();
+      mandats.push({
+        id: `mandat-${a.id}-${i}`,
+        regionId: a.id,
+        territoire: a.nom,
+        titulaire: pseudo,
+        debut,
+        fin: new Date(new Date(debut).getTime() + REGLAGES.mandatMs).toISOString(),
+        voix: 12 + Math.floor(Math.random() * 90),
+      });
+    }
+    const attente = 2 + Math.floor(Math.random() * 5);
+    for (let i = 0; i < attente; i++) {
+      const pseudo = nouveauPseudo(pris);
+      pris.add(pseudo);
+      candidatsAdmin.push({
+        id: `admin-${a.id}-${i}`,
+        regionId: a.id,
+        territoire: a.nom,
+        pseudo,
+        phrase: PHRASES_CANDIDATURE[i % PHRASES_CANDIDATURE.length],
+        voix: Math.floor(Math.random() * 48),
+        reserves: Math.floor(Math.random() * 6),
+        inscritLe: new Date(Date.now() - Math.random() * 20 * JOUR_MS).toISOString(),
+        dejaElu: false,
+      });
+    }
+  }
+  return { mandats, candidatsAdmin };
+}
+
+/** Adhérents estimés d'une section enregistrée avant l'Assemblée. */
+export function adherentsParDefaut(sectionId: string): number {
+  let empreinte = 0;
+  for (const c of sectionId) empreinte = (empreinte * 31 + c.charCodeAt(0)) % 9973;
+  return 120 + (empreinte % 900);
+}
+
+/* -------------------------------------------------------------------------- */
 
 export const CITOYEN_INITIAL = null;
 
 /** L'état de départ, comme s'il existait déjà une communauté active. */
 export function etatInitial(): Etat {
   const premiere = new Date(Date.now() - 3600000).toISOString();
+  const assemblee = creerAssemblee();
   return {
     citoyen: CITOYEN_INITIAL,
     sujets: creerSujets(),
     sections: creerSections(),
     rendezVous: creerRendezVous(),
+    adhesions: [],
+    mandats: assemblee.mandats,
+    candidatsAdmin: assemblee.candidatsAdmin,
+    soutiensAdmin: [],
     mesVotes: {},
     mesBudgets: {},
     sujetsModeres: [],

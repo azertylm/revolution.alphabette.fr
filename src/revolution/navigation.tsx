@@ -14,6 +14,7 @@ export type Vue =
   | 'rendez-vous'
   | 'attente'
   | 'notifications'
+  | 'assemblee'
   | 'sections'
   | 'fil'
   | 'profil';
