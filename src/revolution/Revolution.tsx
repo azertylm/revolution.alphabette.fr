@@ -1,17 +1,21 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FournisseurRevolution, useRevolution } from './contexte';
 import { exigences } from './moteur';
 import { ProviderNav, type Cible, type ValeurNav, type Vue } from './navigation';
 import { REGLAGES } from './reglages';
 import { duree, joursRestants } from './outils';
 import { Badge } from './ui';
+import { MinuteDuJour } from './composants/MinuteDuJour';
 import { Onboarding } from './composants/Onboarding';
 import { ProposerSujet } from './composants/ProposerSujet';
 import { Accueil } from './vues/Accueil';
 import { Assemblee } from './vues/Assemblee';
 import { Attente } from './vues/Attente';
+import { Dictionnaire } from './vues/Dictionnaire';
 import { FilDuPeuple } from './vues/FilDuPeuple';
 import { Journal } from './vues/Journal';
+import { LivrePublic } from './vues/LivrePublic';
+import { NotreContrat } from './vues/NotreContrat';
 import { Notifications } from './vues/Notifications';
 import { Profil } from './vues/Profil';
 import { RendezVous } from './vues/RendezVous';
@@ -83,6 +87,11 @@ function Application() {
   const [identiteDemandee, setIdentiteDemandee] = useState(false);
   const [raisonIdentite, setRaisonIdentite] = useState<string | undefined>(undefined);
   const [proposeOuvert, setProposeOuvert] = useState(false);
+
+  // Accessibilité (prompt 9) : « texte agrandi » grossit toute l'interface.
+  useEffect(() => {
+    document.documentElement.classList.toggle('texte-agrandi', etat.accessibilite.texteAgrandi);
+  }, [etat.accessibilite.texteAgrandi]);
 
   const listeExigences = exigences(etat);
   const nonLues = etat.notifications.filter((n) => !n.lu);
@@ -180,6 +189,50 @@ function Application() {
               >
                 🗺️
               </button>
+              <button
+                type="button"
+                onClick={() => nav.aller({ vue: 'livre' })}
+                className={`flex min-h-[3.25rem] w-[3.25rem] shrink-0 items-center justify-center rounded-xl border-[3px] text-2xl ${
+                  vue === 'livre' ? 'border-jaune bg-jaune' : 'border-bord bg-carte'
+                }`}
+                title="Le livre public — tout ce qui se passe, vérifiable par tous"
+              >
+                📖
+              </button>
+            </div>
+
+            {/* La rangée des repères : le livre, le contrat, le dictionnaire. */}
+            <div className="mt-2 grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => nav.aller({ vue: 'livre' })}
+                className={`affiche min-h-[3rem] rounded-xl border-[3px] px-2 py-2 text-[11px] leading-tight ${
+                  vue === 'livre' ? 'border-jaune bg-jaune text-black' : 'border-bord bg-carte text-gris'
+                }`}
+              >
+                📖 Livre public
+                <span className="block text-[10px] opacity-80">vérifiable</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => nav.aller({ vue: 'contrat' })}
+                className={`affiche min-h-[3rem] rounded-xl border-[3px] px-2 py-2 text-[11px] leading-tight ${
+                  vue === 'contrat' ? 'border-rouge bg-rouge text-white' : 'border-bord bg-carte text-gris'
+                }`}
+              >
+                📜 Notre contrat
+                <span className="block text-[10px] opacity-80">{etat.contrat.modifiees} modifiée(s)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => nav.aller({ vue: 'dictionnaire' })}
+                className={`affiche min-h-[3rem] rounded-xl border-[3px] px-2 py-2 text-[11px] leading-tight ${
+                  vue === 'dictionnaire' ? 'border-jaune bg-jaune text-black' : 'border-bord bg-carte text-gris'
+                }`}
+              >
+                📚 Dictionnaire
+                <span className="block text-[10px] opacity-80">jargon off</span>
+              </button>
             </div>
           </div>
         </header>
@@ -198,6 +251,7 @@ function Application() {
 
         {/* ================================ LE CONTENU ============================= */}
         <main className="mx-auto w-full max-w-3xl px-3 py-4 lg:max-w-5xl">
+          {vue === 'accueil' && <MinuteDuJour />}
           {vue === 'accueil' && <Accueil />}
           {vue === 'sujet' && <VueSujet />}
           {vue === 'journal' && <Journal />}
@@ -207,6 +261,9 @@ function Application() {
           {vue === 'assemblee' && <Assemblee />}
           {vue === 'sections' && <Sections />}
           {vue === 'fil' && <FilDuPeuple />}
+          {vue === 'livre' && <LivrePublic />}
+          {vue === 'contrat' && <NotreContrat />}
+          {vue === 'dictionnaire' && <Dictionnaire />}
           {vue === 'profil' && <Profil />}
         </main>
 

@@ -1,11 +1,24 @@
 import { categorie } from './categories';
 import { faireVivreAssemblee } from './assemblee';
+import { DICTIONNAIRE_BASE, definitionDeSecours, termesDans } from './education';
+import { nouvelleEntree, resultatAConfirmer, tauxSuspect } from './livre';
 import { REGLAGES } from './reglages';
 import { nomRegion } from './regions';
-import type { Etat, EntreeJournal, Notification, Question, RendezVous, Sujet } from './types';
+import type {
+  BulletinAgrege,
+  EntreeJournal,
+  EntreeLivre,
+  Etat,
+  Notification,
+  Question,
+  RendezVous,
+  Sujet,
+  TermeDictionnaire,
+} from './types';
 import {
   dateLisible,
   heureLisible,
+  jourISO,
   joursRestants,
   nombre,
   pct,
@@ -119,19 +132,24 @@ export function perimetreLisible(s: Sujet): string {
 const GRAINE_VOTES = 0.012;
 
 /** Ajoute des votes simulés à une question (l'heure qui vient de s'écouler). */
-function ajouterVotesSimules(q: Question, s: Sujet): number {
+function ajouterVotesSimules(q: Question, s: Sujet): BulletinAgrege {
   const delta = Math.max(20, Math.round(s.votants * (GRAINE_VOTES + Math.random() * 0.05)));
   const total = totalVotes(q) || 1;
   const partOui = Math.min(0.95, Math.max(0.08, q.oui / total + (Math.random() - 0.5) * 0.12));
   const reste = 1 - partOui;
   const oui = Math.round(delta * partOui);
   const non = Math.round(delta * reste * (0.75 + Math.random() * 0.1));
+  const sansAvis = Math.max(0, delta - oui - non);
   q.oui += oui;
   q.non += non;
-  q.sansAvis += Math.max(0, delta - oui - non);
+  q.sansAvis += sansAvis;
   q.verifies += Math.round(delta * 0.62);
   if (Math.random() < 0.4) q.archives += Math.max(1, Math.round(delta * 0.004));
-  return delta;
+  // Détection silencieuse : une part des votes est marquée « à vérifier »,
+  // jamais retirée. Le taux est déterministe pour rester rejouable.
+  const aVerifier = Math.round(delta * tauxSuspect(q.id));
+  q.aVerifier += aVerifier;
+  return { cycle: 0, date: '', sujetId: s.id, questionId: q.id, oui, non, sansAvis, verifies: Math.round(delta * 0.62), aVerifier };
 }
 
 /** Une question écartée laisse sa place, en haut de liste, à une question de secours. */
@@ -142,13 +160,14 @@ function remplacerParSecours(s: Sujet, ecartee: Question, journal: EntreeJournal
     s.questions = [...restantes, ecartee];
     return;
   }
-  const nouvelle = questionDepuisModele(s.id, s.questions.length, modele);
+  const nouvelle = questionDepuisModele(s.id, s.questions.length, modele, s.categorie);
   const echantillon = Math.max(40, Math.round(s.votants * 0.18));
   const pour = 0.45 + Math.random() * 0.25;
   nouvelle.oui = Math.round(echantillon * pour);
   nouvelle.non = Math.round(echantillon * (1 - pour) * 0.75);
   nouvelle.sansAvis = Math.max(0, echantillon - nouvelle.oui - nouvelle.non);
   nouvelle.verifies = Math.round(echantillon * 0.6);
+  nouvelle.aVerifier = Math.round(echantillon * tauxSuspect(nouvelle.id));
   nouvelle.budgetMoyen = 12;
   s.questions = [nouvelle, ...restantes, ecartee];
   journal.push({
@@ -169,12 +188,16 @@ function notifier(liste: Notification[], n: Omit<Notification, 'date' | 'lu'>) {
 /**
  * LA REFONTE — exécutée à chaque top horaire.
  * 1. agrégation des votes de l'heure ; 2. priorisation ; 3. évolution des
- * questions ; 4. journal en langage clair.
+ * questions ; 4. journal en langage clair ; 5. écriture dans le LIVRE PUBLIC
+ * et dans L'URNE (source brute rejouable).
  */
 export function refonte(etat: Etat): Etat {
   const iso = new Date().toISOString();
+  const cycleCible = etat.cycles + 1;
   const journal: EntreeJournal[] = [];
   const nouvelles: Notification[] = [];
+  const livreNouvelles: EntreeLivre[] = [];
+  const bulletins: BulletinAgrege[] = [];
   const avant = rangs(etat.sujets);
   let agreges = 0;
   let ecartees = 0;
@@ -182,7 +205,11 @@ export function refonte(etat: Etat): Etat {
   const sujets = etat.sujets.map((s) => {
     const copie: Sujet = {
       ...s,
-      questions: s.questions.map((q) => ({ ...q, satisfaction: q.satisfaction ? { ...q.satisfaction } : undefined })),
+      questions: s.questions.map((q) => ({
+        ...q,
+        satisfaction: q.satisfaction ? { ...q.satisfaction } : undefined,
+        pourquoi: q.pourquoi ? { ...q.pourquoi } : undefined,
+      })),
       secours: [...s.secours],
       messages: s.messages,
       signalements: s.signalements,
@@ -193,7 +220,11 @@ export function refonte(etat: Etat): Etat {
       let nouveaux = 0;
       for (const q of copie.questions) {
         if (q.etat === 'ecartee') continue;
-        nouveaux += ajouterVotesSimules(q, copie);
+        const b = ajouterVotesSimules(q, copie);
+        b.cycle = cycleCible;
+        b.date = iso;
+        bulletins.push(b);
+        nouveaux += b.oui + b.non + b.sansAvis;
       }
       copie.votants += nouveaux;
       copie.verifies += Math.round(nouveaux * 0.62);
@@ -210,6 +241,7 @@ export function refonte(etat: Etat): Etat {
       if (Math.random() < 0.55) copie.validations += voix;
       else copie.rejets += voix;
     }
+    copie.aVerifier = copie.questions.reduce((acc, q) => acc + q.aVerifier, 0);
     return copie;
   });
 
@@ -226,12 +258,19 @@ export function refonte(etat: Etat): Etat {
           q.etat = 'exigence';
           q.statut = q.statut ?? 'a-presenter';
           q.depuis = iso;
-          journal.push({
-            id: `j-${Math.random().toString(36).slice(2, 9)}`,
-            date: iso,
-            type: 'exigence',
-            texte: `La question « ${q.texte} » passe à ${pct(st.ouiPct)} de OUI : elle devient une ✊ exigence du peuple et rejoint le cahier des doléances.`,
-          });
+          const texte = `La question « ${q.texte} » passe à ${pct(st.ouiPct)} de OUI : elle devient une ✊ exigence du peuple et rejoint le cahier des doléances.`;
+          journal.push({ id: `j-${Math.random().toString(36).slice(2, 9)}`, date: iso, type: 'exigence', texte });
+          livreNouvelles.push(
+            nouvelleEntree({
+              date: iso,
+              cycle: cycleCible,
+              type: 'exigence',
+              texte,
+              sujetId: s.id,
+              questionId: q.id,
+              donnees: { ouiPct: Math.round(st.ouiPct), seuil: REGLAGES.consensusExigence },
+            }),
+          );
           if (etat.mesVotes[`${s.id}:${q.id}`]) {
             notifier(nouvelles, {
               id: idNotif(`exigence-${q.id}`),
@@ -247,12 +286,19 @@ export function refonte(etat: Etat): Etat {
         q.etat = 'ecartee';
         aRemplacer.push(q);
         ecartees += 1;
-        journal.push({
-          id: `j-${Math.random().toString(36).slice(2, 9)}`,
-          date: iso,
-          type: 'ecartee',
-          texte: `Le peuple écarte « ${q.texte} » (${pct(st.nonPct)} de NON).`,
-        });
+        const texte = `Le peuple écarte « ${q.texte} » (${pct(st.nonPct)} de NON).`;
+        journal.push({ id: `j-${Math.random().toString(36).slice(2, 9)}`, date: iso, type: 'ecartee', texte });
+        livreNouvelles.push(
+          nouvelleEntree({
+            date: iso,
+            cycle: cycleCible,
+            type: 'ecartee',
+            texte,
+            sujetId: s.id,
+            questionId: q.id,
+            donnees: { nonPct: Math.round(st.nonPct) },
+          }),
+        );
       }
     }
     for (const q of aRemplacer) remplacerParSecours(s, q, journal);
@@ -267,12 +313,18 @@ export function refonte(etat: Etat): Etat {
     if (!a || !b || a === b) continue;
     const suivi = s.questions.some((q) => etat.mesVotes[`${s.id}:${q.id}`]);
     if (Math.abs(a - b) >= 3 && b <= 3) {
-      journal.push({
-        id: `j-${Math.random().toString(36).slice(2, 9)}`,
-        date: iso,
-        type: b < a ? 'montee' : 'descente',
-        texte: `Le sujet « ${s.nom} » ${b < a ? 'monte' : 'descend'} en ${b}ᵉ position.`,
-      });
+      const texte = `Le sujet « ${s.nom} » ${b < a ? 'monte' : 'descend'} en ${b}ᵉ position.`;
+      journal.push({ id: `j-${Math.random().toString(36).slice(2, 9)}`, date: iso, type: b < a ? 'montee' : 'descente', texte });
+      livreNouvelles.push(
+        nouvelleEntree({
+          date: iso,
+          cycle: cycleCible,
+          type: 'position',
+          texte,
+          sujetId: s.id,
+          donnees: { avant: a, apres: b },
+        }),
+      );
     }
     if (suivi && a - b > 5) {
       notifier(nouvelles, {
@@ -297,16 +349,122 @@ export function refonte(etat: Etat): Etat {
           cible: { vue: 'sujet', sujetId: s.id, questionId: q.id },
         });
       }
+      // Nouveau résultat « à confirmer » : on l'inscrit au livre, sans rien censurer.
+      if (resultatAConfirmer(q) && !etat.livre.some((e) => e.type === 'suspicion' && e.questionId === q.id)) {
+        livreNouvelles.push(
+          nouvelleEntree({
+            date: iso,
+            cycle: cycleCible,
+            type: 'suspicion',
+            suspect: true,
+            texte: `Plus de ${REGLAGES.suspicionMax} % des votes de « ${q.texte} » sont à vérifier : résultat à confirmer. Les votes sont comptés, jamais supprimés.`,
+            sujetId: s.id,
+            questionId: q.id,
+            donnees: { pctAVerifier: Math.round((q.aVerifier / Math.max(1, totalVotes(q))) * 100) },
+          }),
+        );
+      }
     }
   }
 
   if (agreges > 0) {
-    journal.unshift({
-      id: `j-${Math.random().toString(36).slice(2, 9)}`,
-      date: iso,
-      type: 'refonte',
-      texte: `Refonte de ${heureLisible(iso)} — ${nombre(agreges)} votes agrégés sur ${sujets.filter((s) => s.statut === 'officiel').length} sujets. ${ecartees} question(s) écartée(s).`,
-    });
+    const texte = `Refonte de ${heureLisible(iso)} — ${nombre(agreges)} votes agrégés sur ${sujets.filter((s) => s.statut === 'officiel').length} sujets. ${ecartees} question(s) écartée(s).`;
+    journal.unshift({ id: `j-${Math.random().toString(36).slice(2, 9)}`, date: iso, type: 'refonte', texte });
+    livreNouvelles.unshift(
+      nouvelleEntree({
+        date: iso,
+        cycle: cycleCible,
+        type: 'refonte',
+        texte,
+        donnees: { agreges, ecartees, cycle: cycleCible },
+      }),
+    );
+  }
+
+  // 4 bis. Le dictionnaire citoyen s'alimente tout seul.
+  const dictionnaire = enrichirDictionnaire(etat.dictionnaire, sujets, iso, cycleCible, livreNouvelles);
+
+  // 4 ter. Le peuple peut améliorer une carte « Pourquoi » : la meilleure
+  // version remplace l'ancienne dès qu'elle passe le seuil.
+  const propositionsCarte = etat.propositionsCarte.map((p) => ({ ...p }));
+  for (const p of propositionsCarte) {
+    if (p.retenue) continue;
+    const total = p.oui + p.non + p.sansAvis;
+    if (total < REGLAGES.participationCarte || (p.oui / total) * 100 < REGLAGES.consensusCarte) continue;
+    const sujet = sujets.find((s) => s.id === p.sujetId);
+    const q = sujet?.questions.find((x) => x.id === p.questionId);
+    if (!q) continue;
+    q.pourquoi = {
+      situation: p.situation,
+      siOui: p.siOui,
+      siNon: p.siNon,
+      simpleSituation: p.simpleSituation,
+      simpleOui: p.simpleOui,
+      simpleNon: p.simpleNon,
+      version: (q.pourquoi?.version ?? 1) + 1,
+      auteur: p.auteur,
+    };
+    p.retenue = true;
+    livreNouvelles.push(
+      nouvelleEntree({
+        date: iso,
+        cycle: cycleCible,
+        type: 'carte',
+        texte: `Le peuple a adopté une meilleure explication pour « ${q.texte} » : la carte « Pourquoi c'est important ? » passe en version ${q.pourquoi.version}.`,
+        sujetId: p.sujetId,
+        questionId: p.questionId,
+        donnees: { ouiPct: Math.round((p.oui / total) * 100), version: q.pourquoi.version },
+      }),
+    );
+  }
+
+  // 4 quater. Les règles du jeu : modifiables uniquement à 75 % de OUI.
+  const contrat = {
+    ...etat.contrat,
+    propositions: etat.contrat.propositions.map((p) => ({ ...p })),
+    regles: etat.contrat.regles.map((r) => ({ ...r })),
+  };
+  for (const p of contrat.propositions) {
+    if (p.adoptee) continue;
+    const total = p.oui + p.non + p.sansAvis;
+    if (total < REGLAGES.participationRegle || (p.oui / total) * 100 < REGLAGES.consensusRegle) continue;
+    p.adoptee = true;
+    contrat.modifiees += 1;
+    if (p.numero > 0) {
+      const regle = contrat.regles.find((r) => r.numero === p.numero);
+      if (regle) {
+        regle.titre = p.titre;
+        regle.texte = p.texte;
+      }
+    } else {
+      contrat.regles.push({ numero: contrat.regles.length + 1, titre: p.titre, texte: p.texte });
+    }
+    livreNouvelles.push(
+      nouvelleEntree({
+        date: iso,
+        cycle: cycleCible,
+        type: 'regle',
+        texte: `📜 Le peuple a modifié une règle du jeu à ${Math.round((p.oui / total) * 100)} % de OUI : « ${p.titre} ». Règles modifiées par le peuple : ${contrat.modifiees}.`,
+        donnees: { regle: p.numero, modifiees: contrat.modifiees },
+      }),
+    );
+  }
+
+  // 4 quinquies. Verrouillage du cahier avant un rendez-vous.
+  const jourCourant = jourISO(new Date(iso));
+  const rdvAujourdhui = etat.rendezVous.find((rdv) => rdv.statut === 'officiel' && rdv.date === jourCourant);
+  const heureActuelle = new Date(iso).getHours();
+  const dejaVerrouille = etat.livre.some((e) => e.type === 'verrouillage' && jourISO(new Date(e.date)) === jourCourant);
+  if (rdvAujourdhui && heureActuelle >= REGLAGES.verrouillageHeure && !dejaVerrouille) {
+    livreNouvelles.push(
+      nouvelleEntree({
+        date: iso,
+        cycle: cycleCible,
+        type: 'verrouillage',
+        texte: `🔒 Cahier des doléances verrouillé à ${REGLAGES.verrouillageHeure} h avant « ${rdvAujourdhui.nature} ». Plus aucune ligne ne peut changer : le peuple a parlé.`,
+        donnees: { rdvId: rdvAujourdhui.id, exigences: exigences({ ...etat, sujets }).length },
+      }),
+    );
   }
 
   const historique = [
@@ -318,18 +476,67 @@ export function refonte(etat: Etat): Etat {
   //    et à mesure, sections qui s'ouvrent d'elles-mêmes. Tout est automatique.
   const assemblee = faireVivreAssemblee(etat, iso);
 
+  // 6. L'urne : insertion pure, partitionnée par cycle. On ne met jamais à jour
+  //    une ligne : on en ajoute une. C'est la source rejouable du moteur.
+  const urneComplete = [...etat.urne, ...bulletins];
+  const surplus = Math.max(0, urneComplete.length - REGLAGES.urneMax);
+  const urne = surplus > 0 ? urneComplete.slice(surplus) : urneComplete;
+
   return {
     ...etat,
     sujets,
     sections: assemblee.sections,
     mandats: assemblee.mandats,
     candidatsAdmin: assemblee.candidatsAdmin,
+    dictionnaire,
+    propositionsCarte,
+    contrat,
+    urne,
+    urneArchives: etat.urneArchives + surplus,
+    livre: [...livreNouvelles, ...etat.livre].slice(0, 2000),
     journal: [...journal, ...assemblee.journal, ...etat.journal].slice(0, 200),
     notifications: [...assemblee.notifications, ...nouvelles, ...etat.notifications].slice(0, 120),
     historique,
-    cycles: etat.cycles + 1,
+    cycles: cycleCible,
     derniereRefonte: iso,
   };
+}
+
+/** Ajoute au dictionnaire tout terme nouveau apparu dans un sujet. */
+function enrichirDictionnaire(
+  dictionnaire: TermeDictionnaire[],
+  sujets: Sujet[],
+  iso: string,
+  cycle: number,
+  livre: EntreeLivre[],
+): TermeDictionnaire[] {
+  const connus = new Map(dictionnaire.map((t) => [t.terme.toLowerCase(), t] as const));
+  for (const s of sujets) {
+    const textes = [
+      s.nom,
+      s.probleme,
+      ...s.questions.map((q) => q.texte),
+      ...s.questions.map((q) => q.pourquoi?.situation ?? ''),
+    ];
+    for (const texte of textes) {
+      for (const terme of termesDans(texte)) {
+        if (connus.has(terme.toLowerCase())) continue;
+        const base =
+          DICTIONNAIRE_BASE.find((t) => t.terme.toLowerCase() === terme.toLowerCase()) ?? definitionDeSecours(terme);
+        connus.set(base.terme.toLowerCase(), base);
+        livre.push(
+          nouvelleEntree({
+            date: iso,
+            cycle,
+            type: 'definition',
+            texte: `Nouveau mot expliqué : « ${base.terme} » — ${base.definition}`,
+            donnees: { terme: base.terme },
+          }),
+        );
+      }
+    }
+  }
+  return [...connus.values()];
 }
 
 /** Notifications de rendez-vous : J-7, J-3, J-1 et le jour J. */

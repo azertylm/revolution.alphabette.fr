@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { CATEGORIES, categorie, devinerCategorie, type CategorieId } from '../categories';
 import { useRevolution } from '../contexte';
+import { verifierNeutralite } from '../neutralite';
 import { REGLAGES } from '../reglages';
 import { REGIONS } from '../regions';
 import { dateLisible, duree, nomDepuisProbleme, ressemblance } from '../outils';
@@ -43,6 +44,10 @@ export function ProposerSujet({ onFermer }: { onFermer: () => void }) {
   };
 
   const questions = useMemo(() => categorie(cat).questions, [cat]);
+
+  // Filtre de neutralité (prompt 8) : aucune personne, aucun parti, aucune marque.
+  const neutralite = useMemo(() => verifierNeutralite(probleme), [probleme]);
+  const neutraliteSignalee = probleme.trim().length >= 12 && !neutralite.ok;
 
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/70 p-0 sm:items-center sm:p-4">
@@ -137,6 +142,16 @@ export function ProposerSujet({ onFermer }: { onFermer: () => void }) {
               </div>
             </div>
 
+            {neutraliteSignalee && (
+              <Panneau accent="rouge">
+                <p className="text-sm font-bold text-rouge">🚫 Filtre de neutralité</p>
+                <p className="mt-1 text-sm text-texte">{neutralite.raison}</p>
+                <p className="mt-1 text-[11px] text-gris">
+                  Ici, on décide toujours d’une mesure concrète — jamais d’une personne, d’un parti ou d’une marque.
+                </p>
+              </Panneau>
+            )}
+
             {doublon && (
               <Panneau accent="rouge">
                 <p className="text-sm font-bold text-rouge">
@@ -169,7 +184,7 @@ export function ProposerSujet({ onFermer }: { onFermer: () => void }) {
             <div className="flex flex-wrap items-center gap-3">
               <GrosBouton
                 onClick={envoyer}
-                disabled={probleme.trim().length < 12 || quotaRestant > 0 || Boolean(doublon)}
+                disabled={probleme.trim().length < 12 || quotaRestant > 0 || Boolean(doublon) || neutraliteSignalee}
               >
                 ✊ Envoyer au peuple
               </GrosBouton>

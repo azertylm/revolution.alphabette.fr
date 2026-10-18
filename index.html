@@ -2,12 +2,31 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Révolution — alphabette.fr</title>
     <meta
       name="description"
       content="À force de tirer sur le fil du peuple, il casse. — application de l'écosystème alphabette.fr."
     />
+
+    <!-- Application installable (PWA) : manifeste, thème, icônes Apple. -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#0d0d0d" />
+    <meta name="color-scheme" content="dark light" />
+    <link rel="icon" type="image/svg+xml" href="/icone.svg" />
+    <link rel="apple-touch-icon" href="/icone.svg" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Révolution" />
+    <meta name="application-name" content="Révolution" />
+
+    <!-- Partage : le slogan, partout. -->
+    <meta property="og:title" content="Révolution — le peuple décide" />
+    <meta property="og:description" content="À force de tirer sur le fil du peuple, il casse." />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="fr_FR" />
+    <meta name="twitter:card" content="summary" />
   </head>
   <body>
     <div id="root"></div>

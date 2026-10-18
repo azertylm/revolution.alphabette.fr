@@ -1,0 +1,28 @@
+{
+  "name": "Révolution — le peuple décide",
+  "short_name": "Révolution",
+  "description": "À force de tirer sur le fil du peuple, il casse. Voter, juger, vérifier : une seule application, dans ta poche.",
+  "lang": "fr",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d0d0d",
+  "theme_color": "#0d0d0d",
+  "categories": ["government", "news", "social"],
+  "icons": [
+    {
+      "src": "/icone.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icone.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

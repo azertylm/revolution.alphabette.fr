@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Révolution">
+  <rect width="512" height="512" rx="104" fill="#0d0d0d" />
+  <rect x="0" y="0" width="341" height="26" fill="#f2b705" />
+  <rect x="341" y="0" width="171" height="26" fill="#c8102e" />
+  <text
+    x="256"
+    y="332"
+    text-anchor="middle"
+    font-family="Arial Black, Arial, Helvetica, sans-serif"
+    font-size="270"
+    font-weight="900"
+    fill="#f2b705"
+  >
+    R
+  </text>
+  <rect x="86" y="378" width="340" height="22" rx="11" fill="#c8102e" transform="rotate(-6 256 389)" />
+  <circle cx="256" cy="452" r="14" fill="#f2b705" />
+</svg>

@@ -6,6 +6,7 @@ import type { Question, Sujet } from '../types';
 import { nombre, pct, pourcentageRegion, statsQuestion } from '../outils';
 import { Badge, Etiquette, GrosBouton, Jauge, Panneau, TitreSection } from '../ui';
 import { EtatQuestionBadge } from './CarresVote';
+import { TexteCitoyen } from './Dictionnaire';
 
 /* ==========================================================================
    LES RÉSULTATS — « La voix du peuple ».
@@ -154,7 +155,9 @@ export function Resultats({ sujet }: { sujet: Sujet }) {
                 </span>
                 <EtatQuestionBadge question={q} />
               </div>
-              <p className="affiche text-lg text-texte sm:text-xl">{q.texte}</p>
+              <p className="affiche text-lg text-texte sm:text-xl">
+                <TexteCitoyen texte={q.texte} />
+              </p>
 
               {/* Les trois pourcentages, énormes. */}
               <div className="mt-3 grid grid-cols-3 gap-2">

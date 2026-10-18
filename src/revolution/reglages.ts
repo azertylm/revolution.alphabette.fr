@@ -55,6 +55,30 @@ export const REGLAGES = {
   demandesPourOuvrir: 5,
   /** Adhésions simulées ajoutées à chaque refonte (la communauté vit). */
   adhesionsParRefonte: 3,
+
+  /* -------------------- Prompt 8 : confiance & anti-manipulation ---------- */
+  /** Au-delà de ce pourcentage de votes « à vérifier », le résultat est à confirmer. */
+  suspicionMax: 30,
+  /** Comptes actifs maximum hébergés par un même appareil. */
+  comptesParAppareil: 2,
+  /** Pourcentage de OUI requis pour modifier une règle du contrat. */
+  consensusRegle: 75,
+  /** Participation minimale (votes exprimés) pour qu'une modification de règle soit valable. */
+  participationRegle: 500,
+
+  /* -------------------- Prompt 9 : éducation civique --------------------- */
+  /** Pourcentage de OUI requis pour adopter une meilleure carte « Pourquoi ». */
+  consensusCarte: 50,
+  /** Participation minimale pour adopter une nouvelle carte. */
+  participationCarte: 40,
+  /** Taille du dictionnaire citoyen : objectif zéro mot non défini. */
+  objectifZeroMotNonDefini: 0,
+
+  /* -------------------- Prompt 10 : échelle & sobriété ------------------- */
+  /** Lignes brutes conservées dans l'urne (partition par cycle). */
+  urneMax: 20000,
+  /** Nombre de formulateurs : niveau de dégradation au-delà duquel on met en file. */
+  chargeSaturee: 0.92,
 } as const;
 
 /** Statuts possibles selon le niveau de consensus atteint. */

@@ -491,6 +491,30 @@ body {
   }
 }
 
+/* --------------------------------------------------------------------------
+   Prompt 8 & 9 : le livre public, le dictionnaire, l'accessibilité.
+   -------------------------------------------------------------------------- */
+
+/* Un mot du dictionnaire citoyen : souligné pointillé jaune, ça se touche. */
+.mot-dico {
+  text-decoration: underline dotted var(--color-jaune) 3px;
+  text-underline-offset: 4px;
+  cursor: help;
+  font-weight: 700;
+}
+
+/* Mode lecture facile : phrases plus aérées, tout respire. */
+.lecture-facile {
+  font-size: 1.06rem;
+  line-height: 1.7;
+  letter-spacing: 0.005em;
+}
+
+/* Texte agrandi : toute l'interface grossit (posé sur <html>). */
+html.texte-agrandi {
+  font-size: 118%;
+}
+
 /* Impression : seule l'affiche du cahier des doléances est imprimée. */
 @media print {
   body.impression-cahier * {

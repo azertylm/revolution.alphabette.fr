@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useRevolution } from '../contexte';
+import { placesRestantesAppareil } from '../etat';
 import { REGIONS } from '../regions';
 import type { BadgeCitoyen } from '../types';
 import { Badge, GrosBouton, Panneau } from '../ui';
@@ -44,6 +45,9 @@ export function Onboarding({ raison, onFermer }: { raison?: string; onFermer: ()
     if (pseudo.trim().length < 3) return setErreur('Choisis un pseudo de 3 caractères minimum.');
     if (!/^\d{4}$/.test(pin)) return setErreur('Le code PIN, c’est 4 chiffres. Rien d’autre.');
     if (!region) return setErreur('La région est obligatoire : les questions locales sont régionalisées.');
+    if (placesRestantesAppareil(etat) === 0) {
+      return setErreur('Cet appareil héberge déjà 2 comptes. Un appareil = 2 citoyens au maximum, pour protéger le vote.');
+    }
     if (verification) {
       if (!honneur) return setErreur('Déclaration sur l’honneur non cochée.');
       if (captcha.trim() !== captchaAttendu) return setErreur('Vérification humaine : 7 + 5 font… ? Essaie encore.');
@@ -87,6 +91,10 @@ export function Onboarding({ raison, onFermer }: { raison?: string; onFermer: ()
         <h2 className="affiche text-2xl text-jaune">Je suis le peuple</h2>
         <p className="mt-2 text-sm text-gris">
           {raison ?? 'Un humain = un vote.'} Deux champs, un bouton. L’email n’est jamais obligatoire.
+        </p>
+        <p className="mt-1 text-[11px] text-gris">
+          📱 Cet appareil héberge {etat.comptesAppareil.length} compte(s) sur 2 autorisés. Un appareil = deux citoyens
+          au maximum : c’est le premier rempart, silencieux, contre les faux comptes.
         </p>
 
         <div className="mt-4 space-y-3">
@@ -224,6 +232,10 @@ export function Onboarding({ raison, onFermer }: { raison?: string; onFermer: ()
             <GrosBouton
               variante="neutre"
               onClick={() => {
+                if (placesRestantesAppareil(etat) === 0) {
+                  setErreur('Cet appareil héberge déjà 2 comptes. Un appareil = 2 citoyens au maximum.');
+                  return;
+                }
                 agir({
                   type: 'citoyen',
                   citoyen: {

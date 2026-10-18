@@ -1,10 +1,33 @@
 import { categorie, type CategorieId } from './categories';
 import { nomAssemblee } from './assemblee';
-import { adherentsParDefaut, etatInitial } from './donnees';
+import { adherentsParDefaut, etatInitial, urneDepuisSujets } from './donnees';
+import { cartePourquoi, definitionDeSecours, enPhraseFacile } from './education';
+import { codeRecu, nouvelleEntree, tauxSuspect } from './livre';
 import { notificationsRendezVous, refonte } from './moteur';
+import { verifierNeutralite } from './neutralite';
 import { REGLAGES } from './reglages';
-import type { ChoixVote, Citoyen, Etat, Niveau, Question, ReponseEtat, Sujet } from './types';
-import { appliquerVote, deriverQuestions, jourISO, nomDepuisProbleme, poidsVote, raisonPoidsNul } from './outils';
+import type {
+  ChoixVote,
+  Citoyen,
+  Contrat,
+  EntreeLivre,
+  Etat,
+  Niveau,
+  PropositionCarte,
+  PropositionRegle,
+  Question,
+  ReponseEtat,
+  Sujet,
+} from './types';
+import {
+  appliquerVote,
+  deriverQuestions,
+  jourISO,
+  nomDepuisProbleme,
+  poidsVote,
+  raisonPoidsNul,
+  totalVotes,
+} from './outils';
 
 /* ==========================================================================
    L'état : une seule source de vérité, mutée par des actions nommées.
@@ -46,6 +69,22 @@ export type Action =
   | { type: 'citoyen'; citoyen: Citoyen | null }
   | { type: 'profil'; changement: Partial<Citoyen> }
   | { type: 'partage'; sujetId: string }
+  /* ---------- Prompt 8 : transparence, contrat du peuple ---------- */
+  | { type: 'proposer-regle'; numero: number; titre: string; texte: string }
+  | { type: 'voter-regle'; propositionId: string; choix: ChoixVote }
+  /* ---------- Prompt 9 : éducation civique ---------- */
+  | {
+      type: 'proposer-carte';
+      sujetId: string;
+      questionId: string;
+      situation: string;
+      siOui: string;
+      siNon: string;
+    }
+  | { type: 'voter-carte'; propositionId: string; choix: ChoixVote }
+  | { type: 'minute-reponse'; jour: string; questionId: string; appris: boolean }
+  | { type: 'accessibilite'; reglages: Partial<Etat['accessibilite']> }
+  | { type: 'ajouter-terme'; terme: string }
   | { type: 'reinitialiser' };
 
 const CLE = 'revolution.v1';
@@ -61,8 +100,23 @@ export function chargerEtat(): Etat {
     const etat = { ...base, ...parse } as Etat;
     // Un état enregistré avant l'Assemblée n'a ni sièges ni sections complètes :
     // on complète les champs manquants sans jamais écraser le reste.
+    // Idem pour les couches des prompts 8 à 10 : les sauvegardes anciennes sont
+    // migrées à la volée (cartes « Pourquoi », votes « à vérifier », urne).
+    const sujets = etat.sujets.map((s) => {
+      const questions = s.questions.map((q) => ({
+        ...q,
+        aVerifier: typeof q.aVerifier === 'number' ? q.aVerifier : Math.round(totalVotes(q) * tauxSuspect(q.id)),
+        pourquoi: q.pourquoi ?? cartePourquoi(q, s.categorie),
+      }));
+      return {
+        ...s,
+        questions,
+        aVerifier: typeof s.aVerifier === 'number' ? s.aVerifier : questions.reduce((acc, q) => acc + q.aVerifier, 0),
+      };
+    });
     return {
       ...etat,
+      sujets,
       sections: etat.sections.map((s) => ({
         ...s,
         membres: typeof s.membres === 'number' ? s.membres : adherentsParDefaut(s.id),
@@ -71,6 +125,16 @@ export function chargerEtat(): Etat {
       mandats: etat.mandats ?? base.mandats,
       candidatsAdmin: etat.candidatsAdmin ?? base.candidatsAdmin,
       soutiensAdmin: etat.soutiensAdmin ?? [],
+      recus: etat.recus ?? [],
+      livre: etat.livre ?? base.livre,
+      contrat: etat.contrat ?? base.contrat,
+      comptesAppareil: etat.comptesAppareil ?? [],
+      dictionnaire: etat.dictionnaire ?? base.dictionnaire,
+      propositionsCarte: etat.propositionsCarte ?? [],
+      minute: etat.minute ?? base.minute,
+      accessibilite: etat.accessibilite ?? base.accessibilite,
+      urne: etat.urne && etat.urne.length ? etat.urne : urneDepuisSujets(sujets, etat.cycles ?? base.cycles),
+      urneArchives: etat.urneArchives ?? 0,
     };
   } catch {
     return etatInitial();
@@ -109,6 +173,27 @@ export function dejaVote(etat: Etat, sujetId: string): number {
   return Object.keys(etat.mesVotes).filter((cle) => cle.startsWith(`${sujetId}:`)).length;
 }
 
+/* --------------------------------------------------------------------------
+   Prompt 8 : un compte = un humain. Un même appareil n'héberge pas plus de
+   deux comptes actifs — premier rempart, silencieux, contre les faux comptes.
+   -------------------------------------------------------------------------- */
+
+/** Ce pseudo est-il déjà hébergé par cet appareil ? */
+export function compteConnuSurAppareil(etat: Etat, pseudo: string): boolean {
+  const propre = pseudo.trim().toLowerCase();
+  return (etat.comptesAppareil ?? []).some((p) => p.toLowerCase() === propre);
+}
+
+/** Places de compte restantes sur cet appareil (2 maximum). */
+export function placesRestantesAppareil(etat: Etat): number {
+  return Math.max(0, REGLAGES.comptesParAppareil - (etat.comptesAppareil ?? []).length);
+}
+
+/** Cet appareil accepte-t-il ce (nouveau) compte ? */
+export function compteAutoriseSurAppareil(etat: Etat, pseudo: string): boolean {
+  return compteConnuSurAppareil(etat, pseudo) || placesRestantesAppareil(etat) > 0;
+}
+
 function nouveauSujet(etat: Etat, probleme: string, cat: CategorieId): Sujet {
   const id = `sujet-${Date.now().toString(36)}`;
   const nom = nomDepuisProbleme(probleme);
@@ -126,6 +211,7 @@ function nouveauSujet(etat: Etat, probleme: string, cat: CategorieId): Sujet {
     votants: 0,
     verifies: 0,
     archives: 0,
+    aVerifier: 0,
     questions: deriverQuestions(id, probleme, cat),
     secours: [...categorie(cat).secours],
     budgetVotants: 0,
@@ -163,8 +249,9 @@ export function reducer(etat: Etat, action: Action): Etat {
       const cle = `${action.sujetId}:${action.questionId}`;
       const ancien = etat.mesVotes[cle];
       if (ancien === action.choix) return etat;
+      const question = sujet.questions.find((q) => q.id === action.questionId);
       const premier = !Object.keys(etat.mesVotes).some((k) => k.startsWith(`${action.sujetId}:`));
-      return majSujet(
+      const suivant = majSujet(
         { ...etat, mesVotes: { ...etat.mesVotes, [cle]: action.choix } },
         action.sujetId,
         (s) => {
@@ -182,12 +269,36 @@ export function reducer(etat: Etat, action: Action): Etat {
           };
         },
       );
+      // Le reçu de vote : privé, prouvable individuellement, jamais publié.
+      if (!question) return suivant;
+      const recu = {
+        code: codeRecu(action.sujetId, action.questionId, etat.cycles, pseudoDe(etat)),
+        date: new Date().toISOString(),
+        cycle: etat.cycles,
+        sujetId: action.sujetId,
+        sujetNom: sujet.nom,
+        questionId: action.questionId,
+        questionTexte: question.texte,
+        choix: action.choix,
+      };
+      return {
+        ...suivant,
+        recus: [
+          recu,
+          ...etat.recus.filter((r) => !(r.questionId === action.questionId && r.cycle === etat.cycles)),
+        ].slice(0, 300),
+      };
     }
 
     case 'budget': {
       const sujet = etat.sujets.find((s) => s.id === action.sujetId);
       if (!sujet) return etat;
       const total = sujet.budgetVotants;
+      const recus = etat.recus.map((r) => {
+        if (r.sujetId !== action.sujetId || r.cycle !== etat.cycles) return r;
+        const index = sujet.questions.findIndex((q) => q.id === r.questionId);
+        return index >= 0 ? { ...r, budget: action.points[index] ?? r.budget } : r;
+      });
       return {
         ...majSujet(etat, action.sujetId, (s) => ({
           ...s,
@@ -199,6 +310,7 @@ export function reducer(etat: Etat, action: Action): Etat {
           }),
         })),
         mesBudgets: { ...etat.mesBudgets, [action.sujetId]: action.points },
+        recus,
       };
     }
 
@@ -470,8 +582,11 @@ export function reducer(etat: Etat, action: Action): Etat {
       );
     }
 
-    case 'reponse-etat':
-      return majSujet(etat, action.sujetId, (s) =>
+    case 'reponse-etat': {
+      const sujet = etat.sujets.find((s) => s.id === action.sujetId);
+      const question = sujet?.questions.find((q) => q.id === action.questionId);
+      const libelle = action.reponse === 'accepte' ? 'acceptée' : action.reponse === 'refuse' ? 'refusée' : 'renvoyée à étude';
+      const suivant = majSujet(etat, action.sujetId, (s) =>
         majQuestion(s, action.questionId, (q) => ({
           ...q,
           reponse: action.reponse,
@@ -479,6 +594,23 @@ export function reducer(etat: Etat, action: Action): Etat {
           satisfaction: { satisfait: 2, pasSatisfait: 6 },
         })),
       );
+      if (!sujet || !question) return suivant;
+      return {
+        ...suivant,
+        livre: [
+          nouvelleEntree({
+            date: new Date().toISOString(),
+            cycle: etat.cycles,
+            type: 'reponse',
+            texte: `L’État a répondu à l’exigence « ${question.texte} » : réponse ${libelle}. Le peuple va voter sa satisfaction.`,
+            sujetId: action.sujetId,
+            questionId: action.questionId,
+            donnees: { reponse: action.reponse },
+          }),
+          ...etat.livre,
+        ].slice(0, 2000),
+      };
+    }
 
     case 'presenter-exigence':
       return majSujet(etat, action.sujetId, (s) =>
@@ -520,8 +652,19 @@ export function reducer(etat: Etat, action: Action): Etat {
     case 'cycle-accelere':
       return { ...etat, cycleAccelere: action.actif };
 
-    case 'citoyen':
-      return { ...etat, citoyen: action.citoyen };
+    case 'citoyen': {
+      if (!action.citoyen) return { ...etat, citoyen: null };
+      const pseudo = action.citoyen.pseudo;
+      const connus = etat.comptesAppareil ?? [];
+      const dejaConnu = compteConnuSurAppareil(etat, pseudo);
+      // Deux comptes maximum par appareil : au-delà, on refuse silencieusement.
+      if (!dejaConnu && connus.length >= REGLAGES.comptesParAppareil) return etat;
+      return {
+        ...etat,
+        citoyen: action.citoyen,
+        comptesAppareil: dejaConnu ? connus : [...connus, pseudo],
+      };
+    }
 
     case 'profil':
       return etat.citoyen ? { ...etat, citoyen: { ...etat.citoyen, ...action.changement } } : etat;
@@ -538,6 +681,224 @@ export function reducer(etat: Etat, action: Action): Etat {
           ...etat.partages,
           [action.sujetId]: { lien: `https://revolution.alphabette.fr/s/${code}`, votes: 0 },
         },
+      };
+    }
+
+    /* ======================================================================
+       Prompt 8 : le contrat du peuple. Les 5 règles ne changent qu'à 75 % de
+       OUI, avec au moins 500 votes exprimés. Chaque tentative laisse une trace
+       dans le livre public — adoption comme rejet.
+       ====================================================================== */
+    case 'proposer-regle': {
+      if (!etat.citoyen) return etat;
+      const proposition: PropositionRegle = {
+        id: `regle-${Date.now().toString(36)}`,
+        date: new Date().toISOString(),
+        auteur: pseudoDe(etat),
+        numero: action.numero,
+        titre: action.titre,
+        texte: action.texte,
+        oui: 0,
+        non: 0,
+        sansAvis: 0,
+        adoptee: false,
+      };
+      return {
+        ...etat,
+        contrat: { ...etat.contrat, propositions: [proposition, ...etat.contrat.propositions] },
+        livre: [
+          nouvelleEntree({
+            date: proposition.date,
+            cycle: etat.cycles,
+            type: 'regle',
+            texte: `Proposition de modification de la règle ${action.numero} : « ${action.titre} ». Il faut ${REGLAGES.consensusRegle} % de OUI et au moins ${REGLAGES.participationRegle} votes exprimés.`,
+            donnees: { numero: action.numero, seuil: REGLAGES.consensusRegle, participationMin: REGLAGES.participationRegle },
+          }),
+          ...etat.livre,
+        ].slice(0, 2000),
+      };
+    }
+
+    case 'voter-regle': {
+      const cleRegle = `regle:${action.propositionId}`;
+      if (etat.mesVotes[cleRegle]) return etat;
+      const proposition = etat.contrat.propositions.find((p) => p.id === action.propositionId);
+      if (!proposition || proposition.adoptee) return etat;
+      const maj: PropositionRegle = { ...proposition };
+      if (action.choix === 'oui') maj.oui += 1;
+      else if (action.choix === 'non') maj.non += 1;
+      else maj.sansAvis += 1;
+      const exprimes = maj.oui + maj.non;
+      const ouiPct = exprimes > 0 ? (maj.oui / exprimes) * 100 : 0;
+      const participation = maj.oui + maj.non + maj.sansAvis;
+      const adoptee = participation >= REGLAGES.participationRegle && ouiPct >= REGLAGES.consensusRegle;
+      maj.adoptee = adoptee;
+      let contrat: Contrat = {
+        ...etat.contrat,
+        propositions: etat.contrat.propositions.map((p) => (p.id === maj.id ? maj : p)),
+      };
+      let livre = etat.livre;
+      if (adoptee) {
+        let regles = contrat.regles.map((r) =>
+          r.numero === maj.numero ? { ...r, titre: maj.titre, texte: maj.texte } : r,
+        );
+        if (maj.numero === 0) regles = [...regles, { numero: regles.length + 1, titre: maj.titre, texte: maj.texte }];
+        contrat = { ...contrat, regles, modifiees: contrat.modifiees + 1 };
+        livre = [
+          nouvelleEntree({
+            date: new Date().toISOString(),
+            cycle: etat.cycles,
+            type: 'regle',
+            texte: `Le peuple modifie la règle ${maj.numero} à ${Math.round(ouiPct)} % de OUI (${participation} votes exprimés) : « ${maj.titre} ». Règles modifiées par le peuple : ${contrat.modifiees}.`,
+            donnees: { numero: maj.numero, ouiPct: Math.round(ouiPct), participation, modifiees: contrat.modifiees },
+          }),
+          ...livre,
+        ].slice(0, 2000);
+      }
+      return { ...etat, contrat, livre, mesVotes: { ...etat.mesVotes, [cleRegle]: action.choix } };
+    }
+
+    /* ======================================================================
+       Prompt 9 : l'éducation civique. Les explications ne sont jamais figées :
+       le peuple peut proposer une meilleure carte « Pourquoi c'est important ? »,
+       adoptée à 50 % de OUI avec 40 votes exprimés minimum.
+       ====================================================================== */
+    case 'proposer-carte': {
+      if (!etat.citoyen) return etat;
+      const proposition: PropositionCarte = {
+        id: `carte-${Date.now().toString(36)}`,
+        date: new Date().toISOString(),
+        sujetId: action.sujetId,
+        questionId: action.questionId,
+        situation: action.situation,
+        siOui: action.siOui,
+        siNon: action.siNon,
+        simpleSituation: enPhraseFacile(action.situation),
+        simpleOui: enPhraseFacile(action.siOui),
+        simpleNon: enPhraseFacile(action.siNon),
+        auteur: pseudoDe(etat),
+        oui: 0,
+        non: 0,
+        sansAvis: 0,
+        retenue: false,
+      };
+      return {
+        ...etat,
+        propositionsCarte: [proposition, ...etat.propositionsCarte],
+        livre: [
+          nouvelleEntree({
+            date: proposition.date,
+            cycle: etat.cycles,
+            type: 'carte',
+            texte: `Nouvelle explication proposée pour « ${action.questionId} » : « ${action.situation.slice(0, 80)}… ». Le peuple décide si elle remplace l'ancienne.`,
+            sujetId: action.sujetId,
+            questionId: action.questionId,
+            donnees: { seuil: REGLAGES.consensusCarte },
+          }),
+          ...etat.livre,
+        ].slice(0, 2000),
+      };
+    }
+
+    case 'voter-carte': {
+      const cleCarte = `carte:${action.propositionId}`;
+      if (etat.mesVotes[cleCarte]) return etat;
+      const proposition = etat.propositionsCarte.find((p) => p.id === action.propositionId);
+      if (!proposition || proposition.retenue) return etat;
+      const maj: PropositionCarte = { ...proposition };
+      if (action.choix === 'oui') maj.oui += 1;
+      else if (action.choix === 'non') maj.non += 1;
+      else maj.sansAvis += 1;
+      const exprimes = maj.oui + maj.non;
+      const ouiPct = exprimes > 0 ? (maj.oui / exprimes) * 100 : 0;
+      const participation = maj.oui + maj.non + maj.sansAvis;
+      const retenue = participation >= REGLAGES.participationCarte && ouiPct >= REGLAGES.consensusCarte;
+      maj.retenue = retenue;
+      let sujets = etat.sujets;
+      let livre = etat.livre;
+      if (retenue) {
+        // La meilleure version remplace l'ancienne dès que le peuple l'a adoptée.
+        sujets = etat.sujets.map((s) =>
+          s.id !== maj.sujetId
+            ? s
+            : {
+                ...s,
+                questions: s.questions.map((q) =>
+                  q.id === maj.questionId && q.pourquoi
+                    ? {
+                        ...q,
+                        pourquoi: {
+                          situation: maj.situation,
+                          siOui: maj.siOui,
+                          siNon: maj.siNon,
+                          simpleSituation: maj.simpleSituation,
+                          simpleOui: maj.simpleOui,
+                          simpleNon: maj.simpleNon,
+                          version: q.pourquoi.version + 1,
+                          auteur: maj.auteur,
+                        },
+                      }
+                    : q,
+                ),
+              },
+        );
+        livre = [
+          nouvelleEntree({
+            date: new Date().toISOString(),
+            cycle: etat.cycles,
+            type: 'carte',
+            texte: `Le peuple adopte une meilleure explication à ${Math.round(ouiPct)} % de OUI (${participation} votes) : la carte « Pourquoi c'est important ? » est mise à jour, proposée par ${maj.auteur}.`,
+            sujetId: maj.sujetId,
+            questionId: maj.questionId,
+            donnees: { ouiPct: Math.round(ouiPct), participation },
+          }),
+          ...livre,
+        ].slice(0, 2000);
+      }
+      return {
+        ...etat,
+        sujets,
+        livre,
+        propositionsCarte: etat.propositionsCarte.map((p) => (p.id === maj.id ? maj : p)),
+        mesVotes: { ...etat.mesVotes, [cleCarte]: action.choix },
+      };
+    }
+
+    case 'minute-reponse': {
+      // Une seule minute citoyenne par jour : jamais deux fois.
+      if (etat.minute.dernierJour === action.jour) return etat;
+      return {
+        ...etat,
+        minute: {
+          ...etat.minute,
+          dernierJour: action.jour,
+          appris: etat.minute.appris + (action.appris ? 1 : 0),
+          suConnu: etat.minute.suConnu + (action.appris ? 0 : 1),
+          reponses: { ...etat.minute.reponses, [action.jour]: action.questionId },
+        },
+      };
+    }
+
+    case 'accessibilite':
+      return { ...etat, accessibilite: { ...etat.accessibilite, ...action.reglages } };
+
+    case 'ajouter-terme': {
+      const terme = action.terme.trim();
+      if (!terme) return etat;
+      if (etat.dictionnaire.some((t) => t.terme.toLowerCase() === terme.toLowerCase())) return etat;
+      return {
+        ...etat,
+        dictionnaire: [...etat.dictionnaire, definitionDeSecours(terme)],
+        livre: [
+          nouvelleEntree({
+            date: new Date().toISOString(),
+            cycle: etat.cycles,
+            type: 'definition',
+            texte: `Nouveau mot expliqué dans le dictionnaire citoyen : « ${terme} ». Objectif : zéro mot sans définition.`,
+            donnees: { termes: etat.dictionnaire.length + 1 },
+          }),
+          ...etat.livre,
+        ].slice(0, 2000),
       };
     }
 

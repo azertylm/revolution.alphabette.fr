@@ -1,21 +1,30 @@
 import type { ModeleQuestion } from './categories';
 import type {
+  BulletinAgrege,
   Candidat,
   CandidatAdmin,
+  Contrat,
   EntreeJournal,
+  EntreeLivre,
   Etat,
   Mandat,
   MessageSection,
+  MinuteCitoyenne,
   Notification,
   Question,
+  Recu,
+  ReglagesAccessibilite,
   RendezVous,
   Section,
   Sujet,
+  TermeDictionnaire,
 } from './types';
 import { categorie } from './categories';
+import { cartePourquoi, DICTIONNAIRE_BASE, termesDans } from './education';
+import { tauxSuspect } from './livre';
 import { ASSEMBLEES, PHRASES_CANDIDATURE, PRENOMS_VOLONTAIRES, nouveauPseudo } from './assemblee';
 import { REGLAGES } from './reglages';
-import { jourISO } from './outils';
+import { jourISO, totalVotes } from './outils';
 
 /* ==========================================================================
    Les données simulées du prototype.
@@ -56,9 +65,9 @@ interface Graine {
 let compteur = 0;
 const cle = () => `id-${(compteur += 1)}`;
 
-function question(sujetId: string, index: number, g: Graine['questions'][number]): Question {
+function question(sujetId: string, index: number, g: Graine['questions'][number], cat: Sujet['categorie']): Question {
   const total = g.oui + g.non + g.sansAvis;
-  return {
+  const base: Question = {
     id: `${sujetId}-q${index + 1}`,
     texte: g.texte,
     poste: g.poste,
@@ -67,6 +76,7 @@ function question(sujetId: string, index: number, g: Graine['questions'][number]
     sansAvis: g.sansAvis,
     verifies: Math.round(total * 0.62),
     archives: Math.round(total * 0.004),
+    aVerifier: Math.round(total * tauxSuspect(`${sujetId}-q${index + 1}`)),
     etat: g.etat ?? 'ouverte',
     budgetMoyen: g.budget,
     statut: g.statut,
@@ -74,6 +84,8 @@ function question(sujetId: string, index: number, g: Graine['questions'][number]
     satisfaction: g.satisfaction,
     depuis: g.etat === 'exigence' ? new Date(Date.now() - 3 * 86400000).toISOString() : undefined,
   };
+  base.pourquoi = cartePourquoi(base, cat);
+  return base;
 }
 
 function creerSujet(g: Graine, creeLe: string): Sujet {
@@ -93,7 +105,11 @@ function creerSujet(g: Graine, creeLe: string): Sujet {
     votants: g.votants,
     verifies: Math.round(g.votants * 0.62),
     archives: Math.round(g.votants * 0.004),
-    questions: g.questions.map((q, i) => question(sujetId, i, q)),
+    aVerifier: g.questions.reduce(
+      (acc, _q, i) => acc + Math.round((g.questions[i].oui + g.questions[i].non + g.questions[i].sansAvis) * tauxSuspect(`${sujetId}-q${i + 1}`)),
+      0,
+    ),
+    questions: g.questions.map((q, i) => question(sujetId, i, q, g.categorie)),
     secours: [...modele.secours] as ModeleQuestion[],
     budgetVotants: Math.round(g.votants * 0.34),
     creeLe,
@@ -645,15 +661,136 @@ export function adherentsParDefaut(sectionId: string): number {
 
 /* -------------------------------------------------------------------------- */
 
+/* -------------------------------------------------------------------------- */
+/* Prompt 8 & 10 : le livre public, le contrat, l'urne rejouable               */
+/* -------------------------------------------------------------------------- */
+
+const jour = (jours: number, heures = 0) =>
+  new Date(Date.now() - jours * 86400000 - heures * 3600000).toISOString();
+
+/** Amorce du livre public : rien n'invente de résultats, tout est historique. */
+function creerLivre(sujets: Sujet[], cycles: number): EntreeLivre[] {
+  const entrees: EntreeLivre[] = [];
+  const pousse = (
+    date: string,
+    type: EntreeLivre['type'],
+    texte: string,
+    extra: Partial<EntreeLivre> = {},
+  ) => {
+    entrees.push({ id: cle(), date, cycle: cycles, type, texte, ...extra });
+  };
+
+  pousse(
+    jour(0, 1),
+    'refonte',
+    'Refonte horaire : votes agrégés, priorités reclassées, journal publié. Aucune décision écrite à la main.',
+    { donnees: { agreges: 4812, questionsEcartees: 0 } },
+  );
+  pousse(jour(0, 1), 'exigence', 'La question « Contrôle extérieur aléatoire » passe à 78 % de OUI : elle devient une exigence du peuple.', {
+    sujetId: 'toilettes-lycees',
+    questionId: 'toilettes-lycees-q1',
+    donnees: { ouiPct: 78, seuil: REGLAGES.consensusExigence },
+  });
+  pousse(jour(0, 2), 'position', 'Le sujet « Pouvoir d’achat » monte en 1ʳᵉ position du classement.', {
+    sujetId: 'pouvoir-achat',
+    donnees: { avant: 3, apres: 1 },
+  });
+  pousse(jour(0, 3), 'suspicion', 'Votes à motifs suspects détectés sur une question : comptabilisés mais marqués « à vérifier ». Aucun vote supprimé.', {
+    suspect: true,
+    donnees: { questionId: 'justice-delais-q5' },
+  });
+  pousse(jour(1), 'verrouillage', `Cahier des doléances verrouillé à ${REGLAGES.verrouillageHeure} h avant l'audience parlementaire : plus aucune ligne ne peut changer.`, {
+    donnees: { exigences: 9 },
+  });
+  pousse(jour(2), 'regle', 'Le contrat du peuple est verrouillé : les 5 règles du jeu sont publiques et ne changent qu’à 75 % de OUI.', {
+    donnees: { regles: 5, modifiees: 0 },
+  });
+
+  // Les sujets officiels : leur entrée d'ouverture au vote.
+  for (const s of sujets) {
+    entrees.push({
+      id: cle(),
+      date: s.creeLe,
+      cycle: cycles,
+      type: 'refonte',
+      texte: `« ${s.nom} » devient officiel : ${s.validations || REGLAGES.seuilValidations} validations citoyennes. Ses ${s.questions.length} questions sont ouvertes au vote.`,
+      sujetId: s.id,
+    });
+  }
+
+  return entrees.sort((a, b) => b.date.localeCompare(a.date));
+}
+
+/** Les 5 règles du jeu. Verrouillées : 75 % de OUI pour les changer. */
+function creerContrat(): Contrat {
+  return {
+    verrouilleLe: jour(3),
+    modifiees: 0,
+    propositions: [],
+    regles: [
+      { numero: 1, titre: 'Un humain = un vote', texte: 'Un vote par question, par cycle horaire et par compte. Un appareil n’héberge pas plus de deux comptes actifs.' },
+      { numero: 2, titre: 'Refonte horaire', texte: 'Chaque heure, les votes sont agrégés, les sujets reclassés et le journal publié. Aucun vote n’attend.' },
+      { numero: 3, titre: 'Seuil de 66 %', texte: 'Au-delà de 66 % de OUI, une question devient une exigence du peuple et rejoint le cahier des doléances.' },
+      { numero: 4, titre: 'Cahier automatique', texte: 'Le cahier des doléances est généré par le moteur, jamais rédigé à la main.' },
+      { numero: 5, titre: 'Aucune modification manuelle', texte: 'Personne, pas même un développeur, ne peut modifier un résultat sans que la modification apparaisse dans le livre public.' },
+    ],
+  };
+}
+
+/**
+ * L'urne brute : les votes agrégés, écrits en insertion pure, partitionnés par
+ * cycle horaire. C'est la source à partir de laquelle tout se recalcule.
+ */
+export function urneDepuisSujets(sujets: Sujet[], cycles: number): BulletinAgrege[] {
+  const date = new Date(Date.now() - 3600000).toISOString();
+  return sujets.flatMap((s) =>
+    s.questions.map((q) => ({
+      cycle: cycles,
+      date,
+      sujetId: s.id,
+      questionId: q.id,
+      oui: q.oui,
+      non: q.non,
+      sansAvis: q.sansAvis,
+      verifies: q.verifies,
+      aVerifier: q.aVerifier,
+    })),
+  );
+}
+
+/** Le dictionnaire citoyen démarre avec les termes déjà rencontrés. */
+function creerDictionnaire(sujets: Sujet[]): TermeDictionnaire[] {
+  const collectés = new Map<string, TermeDictionnaire>();
+  for (const s of sujets) {
+    for (const texte of [s.nom, s.probleme, ...s.questions.map((q) => q.texte)]) {
+      for (const terme of termesDans(texte)) {
+        const base = DICTIONNAIRE_BASE.find((t) => t.terme.toLowerCase() === terme.toLowerCase());
+        if (base) collectés.set(base.terme.toLowerCase(), base);
+      }
+    }
+  }
+  return [...collectés.values()];
+}
+
+function creerMinute(): MinuteCitoyenne {
+  return { dernierJour: null, appris: 0, suConnu: 0, reponses: {} };
+}
+
+const ACCESSIBILITE_INITIALE: ReglagesAccessibilite = { lectureFacile: false, texteAgrandi: false };
+
+/* -------------------------------------------------------------------------- */
+
 export const CITOYEN_INITIAL = null;
 
 /** L'état de départ, comme s'il existait déjà une communauté active. */
 export function etatInitial(): Etat {
   const premiere = new Date(Date.now() - 3600000).toISOString();
   const assemblee = creerAssemblee();
+  const cycles = 147;
+  const sujets = creerSujets();
   return {
     citoyen: CITOYEN_INITIAL,
-    sujets: creerSujets(),
+    sujets,
     sections: creerSections(),
     rendezVous: creerRendezVous(),
     adhesions: [],
@@ -671,13 +808,23 @@ export function etatInitial(): Etat {
     historique: creerHistorique(),
     dernierEnvoi: null,
     derniereRefonte: premiere,
-    cycles: 147,
+    cycles,
     cycleAccelere: false,
     reglagesNotif: { refontes: true, mobilisation: true, seuils: true },
     partages: {
       'toilettes-lycees': { lien: 'https://revolution.alphabette.fr/s/tlt7x', votes: 37 },
       'pouvoir-achat': { lien: 'https://revolution.alphabette.fr/s/pwa2k', votes: 112 },
     },
+    livre: creerLivre(sujets, cycles),
+    recus: [],
+    contrat: creerContrat(),
+    comptesAppareil: [],
+    dictionnaire: creerDictionnaire(sujets),
+    propositionsCarte: [],
+    minute: creerMinute(),
+    accessibilite: ACCESSIBILITE_INITIALE,
+    urne: urneDepuisSujets(sujets, cycles),
+    urneArchives: 0,
   };
 }
 

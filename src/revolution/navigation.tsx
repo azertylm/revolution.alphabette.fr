@@ -17,6 +17,9 @@ export type Vue =
   | 'assemblee'
   | 'sections'
   | 'fil'
+  | 'livre'
+  | 'contrat'
+  | 'dictionnaire'
   | 'profil';
 
 export interface Cible {

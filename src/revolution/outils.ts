@@ -1,4 +1,5 @@
 import { categorie, devinerCategorie, type CategorieId, type ModeleQuestion } from './categories';
+import { cartePourquoi } from './education';
 import type { ChoixVote, Question } from './types';
 
 /* ==========================================================================
@@ -67,16 +68,26 @@ export function deriverQuestions(sujetId: string, probleme: string, cat: Categor
   const modele = categorie(cat);
   const regionalise = /r[ée]gion|d[ée]partement|ville|commune|chez (moi|nous)/i.test(probleme);
   return modele.questions.map((modele_question, index) =>
-    questionDepuisModele(sujetId, index, {
-      texte: regionalise ? modele_question.texte.replace('de votre région', 'de ta région') : modele_question.texte,
-      poste: modele_question.poste,
-    }),
+    questionDepuisModele(
+      sujetId,
+      index,
+      {
+        texte: regionalise ? modele_question.texte.replace('de votre région', 'de ta région') : modele_question.texte,
+        poste: modele_question.poste,
+      },
+      cat,
+    ),
   );
 }
 
 /** Fabrique une question vierge à partir d'un modèle. */
-export function questionDepuisModele(sujetId: string, index: number, modele: ModeleQuestion): Question {
-  return {
+export function questionDepuisModele(
+  sujetId: string,
+  index: number,
+  modele: ModeleQuestion,
+  cat: CategorieId = 'quotidien',
+): Question {
+  const base: Question = {
     id: `${sujetId}-q${index + 1}-${Math.random().toString(36).slice(2, 6)}`,
     texte: modele.texte,
     poste: modele.poste,
@@ -85,9 +96,14 @@ export function questionDepuisModele(sujetId: string, index: number, modele: Mod
     sansAvis: 0,
     verifies: 0,
     archives: 0,
+    aVerifier: 0,
     etat: 'ouverte',
     budgetMoyen: 0,
   };
+  // Chaque question arrive avec sa carte « Pourquoi c'est important ? » :
+  // jamais une question dont on ne comprend pas l'enjeu (prompt 9).
+  base.pourquoi = cartePourquoi(base, cat);
+  return base;
 }
 
 /** Total des votes exprimés sur une question (sans les archivés). */

@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { useRevolution } from '../contexte';
+import { resultatAConfirmer } from '../livre';
 import { useNav } from '../navigation';
 import { REGLAGES } from '../reglages';
 import type { ChoixVote, Question, Sujet } from '../types';
 import { nombre, pct, statsQuestion } from '../outils';
 import { Badge, Etiquette } from '../ui';
+import { BlocPourquoi } from './BlocPourquoi';
+import { TexteCitoyen } from './Dictionnaire';
 
 /* ==========================================================================
    LES CARRÉS DE VOTE — la pièce maîtresse de l'application.
@@ -109,6 +112,9 @@ function MonPositionnement({ question, cle }: { question: Question; cle: string 
 /** Étiquette d'état d'une question, version affiche. */
 export function EtatQuestionBadge({ question }: { question: Question }) {
   const st = statsQuestion(question);
+  // Prompt 8 : au-delà de 30 % de votes « à vérifier », le résultat est à confirmer.
+  const confirmer = resultatAConfirmer(question) ? <Badge ton="rouge">⚠️ Résultat à confirmer</Badge> : null;
+
   if (question.etat === 'exigence') {
     const statuts: Record<string, string> = {
       'a-presenter': '🟡 À présenter',
@@ -121,13 +127,22 @@ export function EtatQuestionBadge({ question }: { question: Question }) {
       <span className="flex flex-wrap gap-1">
         <Badge ton="rouge">✊ Exigence</Badge>
         <Badge ton="jaune">{statuts[question.statut ?? 'a-presenter']}</Badge>
+        {confirmer}
       </span>
     );
   }
-  if (question.etat === 'ecartee') return <Badge ton="gris">🚫 Écartée par le peuple</Badge>;
-  if (st.ouiPct >= REGLAGES.seuilBascule && st.total > 0)
-    return <Badge ton="jaune">🟡 {Math.round(st.ouiPct)} % — seuil à portée</Badge>;
-  return <Badge ton="gris">En vote</Badge>;
+  return (
+    <span className="flex flex-wrap gap-1">
+      {question.etat === 'ecartee' ? (
+        <Badge ton="gris">🚫 Écartée par le peuple</Badge>
+      ) : st.ouiPct >= REGLAGES.seuilBascule && st.total > 0 ? (
+        <Badge ton="jaune">🟡 {Math.round(st.ouiPct)} % — seuil à portée</Badge>
+      ) : (
+        <Badge ton="gris">En vote</Badge>
+      )}
+      {confirmer}
+    </span>
+  );
 }
 
 /**
@@ -161,7 +176,9 @@ export function BlocQuestion({
         <EtatQuestionBadge question={question} />
       </div>
 
-      <p className={`affiche text-texte ${compact ? 'text-lg sm:text-xl' : 'text-xl sm:text-3xl'}`}>{question.texte}</p>
+      <p className={`affiche text-texte ${compact ? 'text-lg sm:text-xl' : 'text-xl sm:text-3xl'}`}>
+        <TexteCitoyen texte={question.texte} />
+      </p>
 
       <div className="mt-3">
         <CarresVote sujetId={sujet.id} question={question} taille={compact ? 'compact' : 'normal'} />
@@ -181,6 +198,9 @@ export function BlocQuestion({
           </p>
         )}
       </div>
+
+      {/* Prompt 9 : jamais une question dont on ne comprend pas l'enjeu. */}
+      <BlocPourquoi sujet={sujet} question={question} />
     </div>
   );
 }

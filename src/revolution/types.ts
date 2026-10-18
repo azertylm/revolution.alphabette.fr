@@ -43,9 +43,18 @@ export interface Question {
   verifies: number;
   /** Votes archivés pour suspicion (jamais effacés, journalisés). */
   archives: number;
+  /**
+   * Votes « à vérifier » (prompt 8) : motifs suspects (même seconde, série
+   * rapide, trajectoire identique). Ils sont COMPTÉS mais marqués : jamais
+   * supprimés sans trace. Au-delà de 30 %, le résultat affiche
+   * « ⚠️ Résultat à confirmer ».
+   */
+  aVerifier: number;
   etat: EtatQuestion;
   /** Points de budget alloués en moyenne à cette mesure. */
   budgetMoyen: number;
+  /** Éducation civique : la carte « Pourquoi c'est important ? » (prompt 9). */
+  pourquoi?: CartePourquoi;
   /** Statut face à l'État, une fois devenue exigence. */
   statut?: StatutExigence;
   /** Nature de la réponse de l'État (si statut « en-reponse » ou « satisfaite »). */
@@ -80,6 +89,8 @@ export interface Sujet {
   votants: number;
   verifies: number;
   archives: number;
+  /** Votes « à vérifier » cumulés sur les questions du sujet (prompt 8). */
+  aVerifier: number;
   /** Nombre de question(s) en attente de remplacement par une question de secours. */
   questions: Question[];
   /** Réserve de questions, sortie quand une question est « Écartée par le peuple ». */
@@ -229,6 +240,170 @@ export interface Citoyen {
   modeDiscret: boolean;
 }
 
+/* ==========================================================================
+   PROMPT 8 — Le livre public, les reçus de vote, le contrat du peuple.
+   Le livre est un journal append-only : on n'efface jamais une ligne, on
+   n'ajoute que des événements horodatés et recalculables.
+   ========================================================================== */
+
+export type TypeLivre =
+  | 'refonte'
+  | 'position'
+  | 'exigence'
+  | 'ecartee'
+  | 'verrouillage'
+  | 'vote'
+  | 'suspicion'
+  | 'regle'
+  | 'carte'
+  | 'definition'
+  | 'reponse';
+
+export interface EntreeLivre {
+  id: string;
+  date: string;
+  /** Cycle horaire auquel l'événement appartient (partition du journal). */
+  cycle: number;
+  type: TypeLivre;
+  texte: string;
+  sujetId?: string;
+  questionId?: string;
+  /** Marqué « à vérifier » : jamais supprimé, toujours visible. */
+  suspect?: boolean;
+  /** Valeurs brutes, pour que n'importe qui puisse recalculer. */
+  donnees?: Record<string, number | string>;
+}
+
+/**
+ * Un reçu de vote : un code court, unique, conservable. Il prouve
+ * individuellement ton vote auprès du support sans jamais révéler
+ * publiquement qui a voté quoi.
+ */
+export interface Recu {
+  code: string;
+  date: string;
+  cycle: number;
+  sujetId: string;
+  sujetNom: string;
+  questionId: string;
+  questionTexte: string;
+  choix: ChoixVote;
+  /** Répartition budgétaire scellée en même temps (facultative). */
+  budget?: number;
+}
+
+/** Une des cinq règles du jeu, verrouillées par le peuple. */
+export interface RegleContrat {
+  numero: number;
+  titre: string;
+  texte: string;
+}
+
+/** Proposition de modification du contrat : adoptée à 75 % de OUI. */
+export interface PropositionRegle {
+  id: string;
+  date: string;
+  auteur: string;
+  /** Règle visée (0 = nouvelle règle). */
+  numero: number;
+  titre: string;
+  texte: string;
+  oui: number;
+  non: number;
+  sansAvis: number;
+  adoptee: boolean;
+}
+
+export interface Contrat {
+  verrouilleLe: string;
+  regles: RegleContrat[];
+  propositions: PropositionRegle[];
+  /** Fierté de l'application : doit rester 0 tant que le peuple ne vote pas. */
+  modifiees: number;
+}
+
+/* ==========================================================================
+   PROMPT 9 — L'éducation civique intégrée.
+   ========================================================================== */
+
+/** « Pourquoi c'est important ? » : trois phrases, jamais plus. */
+export interface CartePourquoi {
+  situation: string;
+  siOui: string;
+  siNon: string;
+  /** Versions ultra-simples, niveau école (mode lecture facile). */
+  simpleSituation: string;
+  simpleOui: string;
+  simpleNon: string;
+  /** Numéro de version : change quand le peuple adopte une meilleure carte. */
+  version: number;
+  auteur: string;
+}
+
+/** Amélioration d'une carte proposée par un citoyen (vote OUI/NON/Sans avis). */
+export interface PropositionCarte {
+  id: string;
+  date: string;
+  sujetId: string;
+  questionId: string;
+  situation: string;
+  siOui: string;
+  siNon: string;
+  simpleSituation: string;
+  simpleOui: string;
+  simpleNon: string;
+  auteur: string;
+  oui: number;
+  non: number;
+  sansAvis: number;
+  /** Adoptée : la meilleure version remplace l'ancienne à la Refonte suivante. */
+  retenue: boolean;
+}
+
+export interface TermeDictionnaire {
+  terme: string;
+  /** Une phrase, en langage du quotidien. */
+  definition: string;
+  /** La même, en langage ultra-simple. */
+  simple: string;
+}
+
+export interface ReglagesAccessibilite {
+  /** 🗣️ Mode lecture facile : phrases courtes, cartes niveau école. */
+  lectureFacile: boolean;
+  /** 🔍 Texte agrandi : toute l'interface grossit. */
+  texteAgrandi: boolean;
+}
+
+export interface MinuteCitoyenne {
+  /** Jour (AAAA-MM-JJ) de la dernière minute affichée (jamais deux fois). */
+  dernierJour: string | null;
+  /** Le peuple s'instruit : compteurs cumulés (locaux). */
+  appris: number;
+  suConnu: number;
+  /** Question à laquelle TU as répondu, par jour. */
+  reponses: Record<string, string>;
+}
+
+/* ==========================================================================
+   PROMPT 10 — Le moteur de décompte rejouable.
+   Les votes s'écrivent en insertion pure (jamais de mise à jour), partitionnés
+   par cycle horaire. N'importe qui peut recalculer tous les résultats depuis
+   ces lignes brutes et retrouver exactement les mêmes chiffres.
+   ========================================================================== */
+
+export interface BulletinAgrege {
+  cycle: number;
+  date: string;
+  sujetId: string;
+  questionId: string;
+  oui: number;
+  non: number;
+  sansAvis: number;
+  verifies: number;
+  aVerifier: number;
+}
+
 export interface Etat {
   citoyen: Citoyen | null;
   sujets: Sujet[];
@@ -266,4 +441,33 @@ export interface Etat {
   reglagesNotif: { refontes: boolean; mobilisation: boolean; seuils: boolean };
   /** Partages : lien court généré + votes qu'il a apportés. */
   partages: Record<string, { lien: string; votes: number }>;
+
+  /* -------------------- Prompt 8 : transparence & anti-manipulation ------- */
+  /** 📖 Le livre public : journal append-only de TOUT ce qui se passe. */
+  livre: EntreeLivre[];
+  /** Mes reçus de vote (code court, conservable). */
+  recus: Recu[];
+  /** Le contrat du peuple (les 5 règles, verrouillées à 75 % de OUI). */
+  contrat: Contrat;
+  /** Comptes actifs hébergés par CET appareil : 2 maximum. */
+  comptesAppareil: string[];
+
+  /* -------------------- Prompt 9 : éducation civique ---------------------- */
+  /** Le dictionnaire citoyen (« mode jargon off »). */
+  dictionnaire: TermeDictionnaire[];
+  /** Améliorations de cartes proposées par les citoyens. */
+  propositionsCarte: PropositionCarte[];
+  /** La minute citoyenne (une seule fois par jour). */
+  minute: MinuteCitoyenne;
+  /** Accessibilité universelle : lecture facile, texte agrandi. */
+  accessibilite: ReglagesAccessibilite;
+
+  /* -------------------- Prompt 10 : moteur rejouable ---------------------- */
+  /**
+   * La table des votes agrégés, en insertion pure, partitionnée par cycle.
+   * C'est la source brute à partir de laquelle on recalcule tous les résultats.
+   */
+  urne: BulletinAgrege[];
+  /** Cycles d'historique conservés dans l'urne (au-delà, on archive). */
+  urneArchives: number;
 }

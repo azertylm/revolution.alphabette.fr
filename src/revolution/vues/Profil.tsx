@@ -1,6 +1,8 @@
 import { useRevolution } from '../contexte';
-import { dejaVote } from '../etat';
+import { dejaVote, placesRestantesAppareil } from '../etat';
 import { MOBILISES_DU_MOIS } from '../donnees';
+import { dictionnaireComplet } from '../education';
+import { statsConfiance } from '../livre';
 import { exigences, statsGlobales } from '../moteur';
 import { useNav } from '../navigation';
 import { REGIONS, nomRegion } from '../regions';
@@ -186,6 +188,74 @@ export function Profil() {
           {nombre(10)} validations, {nombre(10)} rejets, consensus à 66 %, ratio de ressemblance à 80 %, budget de 100
           points, verrouillage du cahier à 18 h.
         </p>
+      </Panneau>
+
+      <Panneau>
+        <TitreSection droite={<Badge ton="jaune">♿ tous publics</Badge>}>♿ Accessibilité</TitreSection>
+        <ul className="space-y-2">
+          <li className="flex items-center justify-between gap-3 rounded-xl border border-bord bg-carte2 px-3 py-2">
+            <span className="text-sm text-texte">🗣️ Mode lecture facile (cartes niveau école, phrases courtes)</span>
+            <button
+              type="button"
+              onClick={() =>
+                agir({ type: 'accessibilite', reglages: { lectureFacile: !etat.accessibilite.lectureFacile } })
+              }
+              className={`affiche rounded-lg px-3 py-1 text-xs ${
+                etat.accessibilite.lectureFacile ? 'bg-jaune text-black' : 'border border-bord bg-carte text-gris'
+              }`}
+            >
+              {etat.accessibilite.lectureFacile ? 'Activé' : 'Coupé'}
+            </button>
+          </li>
+          <li className="flex items-center justify-between gap-3 rounded-xl border border-bord bg-carte2 px-3 py-2">
+            <span className="text-sm text-texte">🔍 Texte agrandi (toute l’interface grossit)</span>
+            <button
+              type="button"
+              onClick={() => agir({ type: 'accessibilite', reglages: { texteAgrandi: !etat.accessibilite.texteAgrandi } })}
+              className={`affiche rounded-lg px-3 py-1 text-xs ${
+                etat.accessibilite.texteAgrandi ? 'bg-jaune text-black' : 'border border-bord bg-carte text-gris'
+              }`}
+            >
+              {etat.accessibilite.texteAgrandi ? 'Activé' : 'Coupé'}
+            </button>
+          </li>
+        </ul>
+        <p className="mt-3 text-[11px] text-gris">
+          Objectif : que l’application serve un adolescent de 15 ans et une personne de 75 ans, sans aucune aide
+          extérieure.
+        </p>
+      </Panneau>
+
+      <Panneau>
+        <TitreSection>🧭 Le livre, le contrat, le dictionnaire</TitreSection>
+        <div className="grid gap-2 sm:grid-cols-3">
+          <button
+            type="button"
+            onClick={() => nav.aller({ vue: 'livre' })}
+            className="bloc p-3 text-left"
+          >
+            <p className="affiche text-sm text-jaune">📖 Livre public</p>
+            <p className="mt-1 text-[11px] text-gris">{nombre(statsConfiance(etat).lignesLivre)} lignes publiées</p>
+          </button>
+          <button type="button" onClick={() => nav.aller({ vue: 'contrat' })} className="bloc p-3 text-left">
+            <p className="affiche text-sm text-rouge">📜 Notre contrat</p>
+            <p className="mt-1 text-[11px] text-gris">{etat.contrat.modifiees} règle(s) modifiée(s) par le peuple</p>
+          </button>
+          <button type="button" onClick={() => nav.aller({ vue: 'dictionnaire' })} className="bloc p-3 text-left">
+            <p className="affiche text-sm text-jaune">📚 Dictionnaire</p>
+            <p className="mt-1 text-[11px] text-gris">{dictionnaireComplet(etat.dictionnaire).length} mots expliqués</p>
+          </button>
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <Etiquette>
+            🧾 {etat.recus.length} reçu(s) de vote
+          </Etiquette>
+          <Etiquette>
+            📱 {nombre(etat.comptesAppareil.length)}/{2} compte(s) sur cet appareil · {placesRestantesAppareil(etat)}{' '}
+            place(s) restante(s)
+          </Etiquette>
+          <Etiquette>📚 Minute citoyenne : {etat.minute.appris + etat.minute.suConnu} réponse(s)</Etiquette>
+        </div>
       </Panneau>
 
       <Panneau>

@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { BlocQuestion } from '../composants/CarresVote';
+import { TexteCitoyen } from '../composants/Dictionnaire';
 import { useRevolution } from '../contexte';
 import { MOBILISES_DU_MOIS } from '../donnees';
 import { dejaVote } from '../etat';
@@ -71,7 +72,9 @@ function CarteSujet({ sujet, rang }: { sujet: Sujet; rang: number }) {
           </div>
         </div>
 
-        <p className="mt-3 text-sm text-gris">« {sujet.probleme} »</p>
+        <p className="mt-3 text-sm text-gris">
+          « <TexteCitoyen texte={sujet.probleme} /> »
+        </p>
 
         <div className="mt-3">
           <Jauge oui={oui} non={non} sansAvis={sans} hauteur={26} />
