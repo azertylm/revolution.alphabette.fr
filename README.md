@@ -9,6 +9,24 @@ Application de l'écosystème [alphabette.fr](https://alphabette.fr).
 - Base commune : [`@alphabette/shell`](https://alphabette.fr) — les deux barres du
   haut (écosystème + application), le thème jour/nuit, la densité et le plein écran.
 
+## Gratuite, pour toujours
+
+Révolution est une application **gratuite** de l'écosystème : aucun prix, aucun
+essai qui se transforme en abonnement, aucune carte bancaire, aucune publicité.
+Elle vit sur les dons et sur ce que financent les autres applications.
+
+Techniquement, c'est une ligne dans `src/alphabette.app.ts` :
+
+```ts
+gratuit: true,
+```
+
+La base commune s'y adapte toute seule : la barre écosystème affiche
+« gratuit (15 applications) », le bouton « Pass 40 €/an » devient
+« 🧭 L'écosystème », et le panneau explique la gratuité. **Les liens vers le hub
+restent en place** — alphabette.fr, les autres applications, les dons : c'est
+l'écosystème qui fait vivre cette application, pas l'inverse.
+
 ## Démarrer
 
 ```powershell

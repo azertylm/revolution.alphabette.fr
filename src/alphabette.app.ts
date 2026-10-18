@@ -22,8 +22,11 @@ export const APP: AlphaAppConfig = {
   accountUrl: 'https://alphabette.fr/compte',
   apiKeysUrl: 'https://alphabette.fr/cles',
 
-  // Compteur affiché dans la barre écosystème.
-  counter: { unlocked: 1, total: 16, trialDaysLeft: 7 },
+  // Révolution est gratuite, définitivement : la base n'affiche donc, ici,
+  // ni prix, ni essai, ni bouton de paiement — seulement les liens vers le hub
+  // (écosystème, dons, compte), qui financent l'application.
+  gratuit: true,
+
   apiKeyState: 'ok',
   accountState: 'ok',
 };
