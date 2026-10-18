@@ -1,0 +1,25 @@
+{
+  "name": "revolution",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Révolution — application de l'écosystème alphabette.fr",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@alphabette/shell": "link:@alphabette/shell",
+    "react": "^19.0.1",
+    "react-dom": "^19.0.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.0"
+  }
+}
