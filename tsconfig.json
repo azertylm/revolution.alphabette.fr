@@ -2,8 +2,14 @@
   "compilerOptions": {
     "target": "ES2022",
     "module": "ESNext",
-    "types": ["vite/client"],
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": [
+      "vite/client"
+    ],
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "skipLibCheck": true,
     "moduleResolution": "bundler",
     "isolatedModules": true,
@@ -11,6 +17,14 @@
     "allowJs": true,
     "jsx": "react-jsx",
     "allowImportingTsExtensions": true,
-    "noEmit": true
+    "noEmit": true,
+    "paths": {
+      "@alphabette/shell": [
+        "./src/shell/index.ts"
+      ],
+      "@alphabette/shell/style.css": [
+        "./src/shell/shell.css"
+      ]
+    }
   }
 }

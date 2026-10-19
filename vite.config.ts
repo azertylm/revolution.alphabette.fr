@@ -1,9 +1,16 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
+import path from 'node:path';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  resolve: {
+    alias: {
+      '@alphabette/shell/style.css': path.resolve('src/shell/shell.css'),
+      '@alphabette/shell': path.resolve('src/shell/index.ts'),
+    },
+  },
   // La base commune est compilée comme du code du projet.
   optimizeDeps: {
     exclude: ['@alphabette/shell'],
