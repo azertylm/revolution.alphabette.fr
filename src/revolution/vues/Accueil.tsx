@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { BlocQuestion } from '../composants/CarresVote';
 import { TexteCitoyen } from '../composants/Dictionnaire';
+import { MinuteDuJour } from '../composants/MinuteDuJour';
 import { useRevolution } from '../contexte';
 import { MOBILISES_DU_MOIS } from '../donnees';
 import { dejaVote } from '../etat';
@@ -128,7 +129,29 @@ export function Accueil() {
 
   return (
     <div className="space-y-5">
-      {/* ------------------- LE COMPTEUR, PREMIER ÉLÉMENT DE L'ÉCRAN ---------------- */}
+      {/* ------------------- LES VOTES, PREMIER ÉLÉMENT DE L'ÉCRAN ----------------- */}
+      <section>
+        <TitreSection droite={<Badge ton="gris">{visibles.length} sujets</Badge>}>
+          ✊ Vote maintenant
+        </TitreSection>
+        <div className="grid gap-4 lg:grid-cols-2">
+          {visibles.map((sujet, index) => (
+            <CarteSujet key={sujet.id} sujet={sujet} rang={index + 1} />
+          ))}
+        </div>
+        {visibles.length === 0 && (
+          <Panneau>
+            <p className="text-sm text-gris">
+              Aucun sujet officiel dans ce territoire. Touche « + Proposer un sujet » pour lancer le premier.
+            </p>
+          </Panneau>
+        )}
+      </section>
+
+      {/* ------------------- LA MINUTE CITOYENNE (après les votes) ------------------ */}
+      <MinuteDuJour />
+
+      {/* ------------------- LE COMPTEUR -------------------------------------------- */}
       <section className="bloc bloc-jaune ombre-dure-jaune p-4 text-center">
         <p className="text-[11px] font-black uppercase tracking-[0.3em] text-gris">Combien sommes-nous ?</p>
         <p key={actifs} className="monte affiche-large mt-1 text-[3.4rem] leading-none text-jaune sm:text-[5rem]">
@@ -201,23 +224,6 @@ export function Accueil() {
           </div>
         </section>
       )}
-
-      {/* ------------------------------ LE FIL DES SUJETS ------------------------- */}
-      <section>
-        <TitreSection droite={<Badge ton="gris">{visibles.length} sujets</Badge>}>Le fil des sujets</TitreSection>
-        <div className="grid gap-4 lg:grid-cols-2">
-          {visibles.map((sujet, index) => (
-            <CarteSujet key={sujet.id} sujet={sujet} rang={index + 1} />
-          ))}
-        </div>
-        {visibles.length === 0 && (
-          <Panneau>
-            <p className="text-sm text-gris">
-              Aucun sujet officiel dans ce territoire. Touche « + Proposer un sujet » pour lancer le premier.
-            </p>
-          </Panneau>
-        )}
-      </section>
 
       {/* ------------------------------ LA MODÉRATION ----------------------------- */}
       <section>

@@ -5,7 +5,6 @@ import { ProviderNav, type Cible, type ValeurNav, type Vue } from './navigation'
 import { REGLAGES } from './reglages';
 import { duree, joursRestants } from './outils';
 import { Badge } from './ui';
-import { MinuteDuJour } from './composants/MinuteDuJour';
 import { Onboarding } from './composants/Onboarding';
 import { ProposerSujet } from './composants/ProposerSujet';
 import { Accueil } from './vues/Accueil';
@@ -130,11 +129,26 @@ function Application() {
           </div>
 
           <div className="mx-auto w-full max-w-3xl px-3 py-4 lg:max-w-5xl">
-            {/* L'affiche : le slogan respire sur toute la largeur, même sur un petit téléphone. */}
+            {/* L'affiche : le slogan respire sur toute la largeur, même sur un petit téléphone.
+                Le slogan est cliquable : il ramène d'un doigt au votes, sur la première page. */}
             <h1 className="affiche-large text-[clamp(1.65rem,7.2vw,3.6rem)] text-texte [text-wrap:balance]">
-              À force de tirer sur le fil du peuple,{' '}
-              <span className="mt-1 inline-block bg-jaune px-2 py-1 text-black">il casse.</span>
+              <button
+                type="button"
+                onClick={() => nav.aller({ vue: 'accueil' })}
+                title="Retour aux votes — la première page du peuple"
+                className="block w-full cursor-pointer text-left"
+              >
+                À force de tirer sur le fil du peuple,{' '}
+                <span className="mt-1 inline-block bg-jaune px-2 py-1 text-black">il casse.</span>
+              </button>
             </h1>
+            <button
+              type="button"
+              onClick={() => nav.aller({ vue: 'accueil' })}
+              className="affiche mt-2 block text-[11px] text-jaune underline decoration-dotted decoration-2 underline-offset-4"
+            >
+              👆 Touche le slogan pour revenir aux votes
+            </button>
 
             {/* La rangée des raccourcis : mon compte à gauche, la cloche et les lieux à droite. */}
             <div className="mt-3 flex items-stretch gap-2">
@@ -251,7 +265,6 @@ function Application() {
 
         {/* ================================ LE CONTENU ============================= */}
         <main className="mx-auto w-full max-w-3xl px-3 py-4 lg:max-w-5xl">
-          {vue === 'accueil' && <MinuteDuJour />}
           {vue === 'accueil' && <Accueil />}
           {vue === 'sujet' && <VueSujet />}
           {vue === 'journal' && <Journal />}
