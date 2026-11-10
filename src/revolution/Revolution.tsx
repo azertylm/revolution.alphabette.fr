@@ -68,10 +68,15 @@ function BandeauCycle() {
       <div className="h-2 w-full bg-bord">
         <div className="h-full bg-jaune" style={{ width: `${fraction * 100}%` }} />
       </div>
+      <p className="mx-auto w-full max-w-3xl px-3 py-2 text-xs font-bold leading-snug text-jaune lg:max-w-5xl" role="note">
+        ⚠️ Prototype de démonstration : les votants, les voix, les messages, les sections et les réponses de l’État
+        affichés ici sont simulés pour montrer le fonctionnement. Ton vote reste sur ton appareil : il n’est transmis
+        à personne et ne pèse sur aucune décision réelle.
+      </p>
       <p className="mx-auto w-full max-w-3xl px-3 py-1 text-[10px] text-gris lg:max-w-5xl">
         {etat.cycleAccelere
-          ? 'Mode démonstration : chaque minute, les votes sont agrégés et les priorités reclassées.'
-          : 'Chaque heure, les votes sont agrégés, les priorités reclassées et le journal publié.'}
+          ? 'Cycle accéléré : chaque minute, les votes simulés sont agrégés et les priorités reclassées.'
+          : 'Chaque heure, les votes simulés sont agrégés, les priorités reclassées et le journal mis à jour.'}
       </p>
     </div>
   );

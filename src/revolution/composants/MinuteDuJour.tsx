@@ -69,8 +69,7 @@ export function MinuteDuJour() {
           <div className="h-full bg-jaune" style={{ width: `${jauge}%` }} />
         </div>
         <p className="mt-1 text-[11px] text-gris">
-          {nombre(reponsesMinute(etat.minute))} réponses au total, dont {nombre(etat.minute.appris + etat.minute.suConnu)}{' '}
-          de ton appareil. Les questions sont tirées du dictionnaire citoyen : on apprend en votant.
+          {nombre(reponsesMinute(etat.minute))} réponse(s) sur ton appareil. Les questions sont tirées du dictionnaire citoyen : on apprend en votant.
         </p>
       </div>
     </Panneau>

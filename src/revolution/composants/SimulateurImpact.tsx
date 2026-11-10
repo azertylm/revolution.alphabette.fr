@@ -36,8 +36,8 @@ export function SimulateurImpact({
           </button>
         </div>
         <p className="mt-2 text-xs text-gris">
-          Trois champs, une estimation. Aucune donnée n’est enregistrée ni transmise : tout se calcule ici, dans ton
-          navigateur.
+          Ce que la question changerait, en clair. Cette application ne sait pas chiffrer le coût d’une mesure : elle
+          ne l’invente pas. Aucune donnée n’est enregistrée ni transmise.
         </p>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
@@ -82,21 +82,21 @@ export function SimulateurImpact({
         </div>
 
         <div className="mt-4">
-          <GrosBouton onClick={calculer}>Calculer mon impact</GrosBouton>
+          <GrosBouton onClick={calculer}>Voir ce que ça change</GrosBouton>
         </div>
 
         {resultat && (
           <Panneau accent={resultat.concerne ? 'rouge' : 'jaune'} className="mt-4">
             <div className="flex flex-wrap items-center gap-2">
               <Badge ton={resultat.concerne ? 'rouge' : 'jaune'}>
-                {resultat.concerne ? '✊ Exigence du peuple' : '🔎 Estimation'}
+                {resultat.concerne ? '✊ Exigence (votes simulés)' : '🔎 Explication'}
               </Badge>
-              <span className="text-[11px] text-gris">données simulées pour le prototype</span>
+              <span className="text-[11px] text-gris">aucun chiffre inventé</span>
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2 text-center">
               <div className="rounded-xl border-2 border-rouge bg-carte2 px-3 py-2">
                 <p className="affiche-large text-2xl text-rouge">{resultat.cout}</p>
-                <p className="text-[10px] font-black uppercase text-gris">coût estimé</p>
+                <p className="text-[10px] font-black uppercase text-gris">coût pour toi</p>
               </div>
               <div className="rounded-xl border-2 border-jaune bg-carte2 px-3 py-2">
                 <p className="affiche text-sm leading-tight text-jaune">{resultat.gain}</p>
@@ -105,7 +105,7 @@ export function SimulateurImpact({
             </div>
             <p className="mt-3 text-sm text-texte">{resultat.detail}</p>
             <div className="mt-3">
-              <p className="text-[11px] font-black uppercase tracking-wide text-gris">D’où viennent les chiffres</p>
+              <p className="text-[11px] font-black uppercase tracking-wide text-gris">Pour chercher de vrais chiffres</p>
               <ul className="mt-1 space-y-1 text-[11px] text-gris">
                 {resultat.sources.map((s) => (
                   <li key={s.url}>

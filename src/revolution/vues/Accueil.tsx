@@ -82,7 +82,7 @@ function CarteSujet({ sujet, rang }: { sujet: Sujet; rang: number }) {
         </div>
 
         <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] font-black uppercase tracking-wide text-gris">
-          <span>{nombre(sujet.votants)} votants · {sujet.questions.length} questions</span>
+          <span>{nombre(sujet.votants)} votants simulés · {sujet.questions.length} questions</span>
           <span className="flex items-center gap-2">
             <Points faits={votesFaits} total={5} />
             {votesFaits}/5 votés
@@ -158,7 +158,7 @@ export function Accueil() {
           {nombre(actifs)}
         </p>
         <p className="mt-1 text-xs font-black uppercase tracking-wide text-gris">
-          citoyens actifs · {nombre(stats.votesTotaux)} votes exprimés
+          citoyens actifs simulés · {nombre(stats.votesTotaux)} votes simulés
         </p>
         {restantes > 0 ? (
           <button

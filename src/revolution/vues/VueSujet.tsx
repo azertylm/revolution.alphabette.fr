@@ -227,7 +227,7 @@ export function VueSujet() {
         <Panneau>
           <TitreSection>📣 Faire voter les autres</TitreSection>
           <p className="text-xs text-gris">
-            Une affiche prête à partager et un lien court qui compte les votants que tu as amenés.
+            Une affiche prête à partager. Le compteur de « votants amenés » est simulé dans ce prototype.
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <GrosBouton variante="neutre" onClick={() => setOnglet('partager')}>

@@ -136,7 +136,7 @@ export function JaugeQuestion({ question, compact }: { question: Question; compa
         <span className="text-jaune">■ {Math.round(st.ouiPct)} % OUI</span>
         <span className="text-rouge">■ {Math.round(st.nonPct)} % NON</span>
         <span className="text-gris">■ {Math.round(st.sansPct)} % sans avis</span>
-        <span className="text-texte">{nombre(st.total)} votants</span>
+        <span className="text-texte">{nombre(st.total)} votants simulés</span>
         {question.budgetMoyen > 0 && <span className="text-jaune-clair">{Math.round(question.budgetMoyen)} pts</span>}
       </div>
     </div>

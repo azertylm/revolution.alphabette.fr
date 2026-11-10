@@ -47,9 +47,9 @@ export function FilDuPeuple() {
           🗺️ Le fil du peuple
         </TitreSection>
         <p className="text-xs text-gris">
-          {nombre(totalCitoyens)} citoyens répartis dans {nombre(REGIONS.length)} régions. Chaque point est une
-          section locale réelle : celle de ta commune, de ton département, de ta région. La carte est stylisée, les
-          données sont simulées pour le prototype.
+          {nombre(totalCitoyens)} citoyens répartis dans {nombre(REGIONS.length)} régions. Chaque point représente
+          une section locale imaginée pour le prototype : aucune n’existe encore. La carte est stylisée et toutes
+          les données sont simulées.
         </p>
 
         <div className="mt-4 flex flex-col gap-4 sm:flex-row">
