@@ -1,89 +1,82 @@
-import { createContext, useContext, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
-import { chargerEtat, reducer, sauverEtat, type Action } from './etat';
-import { REGLAGES } from './reglages';
-import type { Etat } from './types';
-
-/* ==========================================================================
-   Le contexte : l'état, les actions, et l'horloge de la Refonte.
-   ========================================================================== */
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { effacerAncienPrototype, ecrireEtat, lireEtat } from './donnees';
+import { envoyerReponse, partage, type EtatPartage } from './partage';
+import type { EtatLocal } from './types';
 
 interface Valeur {
-  etat: Etat;
-  agir: (action: Action) => void;
-  /** Horodatage courant (mis à jour chaque seconde) : fait vivre les compteurs. */
-  maintenant: number;
-  /** Durée du cycle en cours (accélérée à 60 s dans le prototype si demandé). */
-  dureeCycle: number;
-  /** Millisecondes restantes avant la prochaine Refonte. */
-  msRestants: number;
-  /** Progression du cycle, de 0 à 1. */
-  fraction: number;
-  refondreMaintenant: () => void;
+  etat: EtatLocal;
+  modifier: (f: (e: EtatLocal) => EtatLocal) => void;
+  repondre: (questionId: string, choix: number) => Promise<void>;
+  partageEtat: EtatPartage;
+  route: string;
+  aller: (route: string) => void;
 }
 
 const Ctx = createContext<Valeur | null>(null);
 
-export function FournisseurRevolution({ children }: { children: ReactNode }) {
-  const [etat, agir] = useReducer(reducer, undefined, chargerEtat);
-  const [maintenant, setMaintenant] = useState(() => Date.now());
-  const derniereRefonteGeree = useRef(0);
+const lireRoute = () => (window.location.hash.replace(/^#/, '') || '/').split('?')[0];
 
-  const dureeCycle = etat.cycleAccelere ? REGLAGES.cycleAccelereMs : REGLAGES.cycleMs;
-  const echeance = new Date(etat.derniereRefonte).getTime() + dureeCycle;
-  const msRestants = Math.max(0, echeance - maintenant);
-  const fraction = Math.min(1, Math.max(0, 1 - msRestants / dureeCycle));
+export function Fournisseur({ children }: { children: ReactNode }) {
+  const [etat, setEtat] = useState<EtatLocal>(() => {
+    effacerAncienPrototype();
+    return lireEtat();
+  });
+  const [partageEtat, setPartageEtat] = useState<EtatPartage>('verification');
+  const [route, setRoute] = useState(lireRoute);
 
-  // L'horloge.
   useEffect(() => {
-    const t = window.setInterval(() => setMaintenant(Date.now()), 1000);
-    return () => window.clearInterval(t);
+    let vivant = true;
+    void partage().then((api) => vivant && setPartageEtat(api ? 'actif' : 'inactif'));
+    const surHash = () => {
+      setRoute(lireRoute());
+      window.scrollTo({ top: 0 });
+    };
+    window.addEventListener('hashchange', surHash);
+    return () => {
+      vivant = false;
+      window.removeEventListener('hashchange', surHash);
+    };
   }, []);
 
-  // Persistance locale.
-  useEffect(() => {
-    sauverEtat(etat);
-  }, [etat]);
-
-  // Le top horaire : La Refonte part toute seule.
-  useEffect(() => {
-    if (maintenant < echeance) return;
-    if (derniereRefonteGeree.current === echeance) return;
-    derniereRefonteGeree.current = echeance;
-    agir({ type: 'refonte' });
-  }, [maintenant, echeance]);
-
-  // Les rappels de rendez-vous (J-7, J-3, J-1, jour J) sont recalculés à l'ouverture.
-  useEffect(() => {
-    agir({ type: 'rdv-notifications' });
+  const modifier = useCallback((f: (e: EtatLocal) => EtatLocal) => {
+    setEtat((avant) => {
+      const apres = f(avant);
+      ecrireEtat(apres);
+      return apres;
+    });
   }, []);
 
-  const valeur = useMemo<Valeur>(
-    () => ({
-      etat,
-      agir,
-      maintenant,
-      dureeCycle,
-      msRestants,
-      fraction,
-      refondreMaintenant: () => agir({ type: 'refonte' }),
-    }),
-    [etat, maintenant, dureeCycle, msRestants, fraction],
+  const repondre = useCallback(
+    async (questionId: string, choix: number) => {
+      modifier((e) => ({ ...e, reponses: { ...e.reponses, [questionId]: { choix, date: new Date().toISOString(), comptee: false } } }));
+      try {
+        const r = await envoyerReponse(questionId, choix);
+        if (r === 'ok' || r === 'deja') {
+          modifier((e) => ({
+            ...e,
+            reponses: { ...e.reponses, [questionId]: { ...e.reponses[questionId], comptee: true } },
+          }));
+        }
+      } catch {
+        /* la réponse reste notée sur l'appareil */
+      }
+    },
+    [modifier],
   );
 
+  const aller = useCallback((r: string) => {
+    window.location.hash = r;
+  }, []);
+
+  const valeur = useMemo(
+    () => ({ etat, modifier, repondre, partageEtat, route, aller }),
+    [etat, modifier, repondre, partageEtat, route, aller],
+  );
   return <Ctx.Provider value={valeur}>{children}</Ctx.Provider>;
 }
 
-export function useRevolution(): Valeur {
-  const valeur = useContext(Ctx);
-  if (!valeur) throw new Error('useRevolution doit être utilisé dans <FournisseurRevolution>.');
-  return valeur;
-}
-
-/** Annonce aux lecteurs d'écran, sans surcharger l'affichage. */
-export function Annonce({ children }: { children: ReactNode }) {
-  return (
-    <span className="sr-only" role="status">
-      {children}
-    </span>
-  );
+export function useRev(): Valeur {
+  const v = useContext(Ctx);
+  if (!v) throw new Error('Fournisseur manquant');
+  return v;
 }

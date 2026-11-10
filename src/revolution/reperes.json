@@ -1,0 +1,66 @@
+{
+  "_aide": "Repères partagés par la page (src/revolution) et la récolte d'actualité (scripts/actualite.mjs). Les mots sont écrits en minuscules, sans accents.",
+  "themes": [
+    { "id": "travail", "nom": "Travail & salaires", "emoji": "💼", "mots": ["salaire", "salaires", "salaries", "smic", "emploi", "emplois", "chomage", "chomeurs", "france travail", "licenciement", "licenciements", "plan social", "greve", "greves", "syndicat", "syndicats", "intersyndicale", "cgt", "cfdt", "unsa", "cfe-cgc", "temps de travail", "teletravail", "embauche", "usine", "ouvriers", "fonctionnaires", "conge", "conges", "code du travail", "prud'hommes", "apprentissage"] },
+    { "id": "pouvoir-achat", "nom": "Pouvoir d'achat & prix", "emoji": "💶", "mots": ["prix", "inflation", "pouvoir d'achat", "carburant", "carburants", "essence", "gazole", "electricite", "facture", "factures", "courses", "supermarche", "supermarches", "consommation", "consommateurs", "tarif", "tarifs", "cheque energie", "marges", "grande distribution"] },
+    { "id": "sante", "nom": "Santé", "emoji": "🏥", "mots": ["sante", "hopital", "hopitaux", "medecin", "medecins", "urgences", "medicament", "medicaments", "securite sociale", "assurance maladie", "mutuelle", "mutuelles", "soins", "infirmier", "infirmiers", "infirmieres", "ehpad", "pharmacie", "pharmacies", "epidemie", "vaccin", "vaccination", "deserts medicaux", "maternite"] },
+    { "id": "logement", "nom": "Logement", "emoji": "🏠", "mots": ["logement", "logements", "loyer", "loyers", "hlm", "logement social", "immobilier", "locataire", "locataires", "proprietaires", "expulsion", "expulsions", "sans-abri", "sans abri", "mal-logement", "renovation energetique", "dpe", "passoires thermiques"] },
+    { "id": "ecole", "nom": "École & jeunesse", "emoji": "🎒", "mots": ["ecole", "ecoles", "college", "colleges", "lycee", "lycees", "universite", "universites", "etudiant", "etudiants", "eleves", "enseignant", "enseignants", "professeurs", "education nationale", "baccalaureat", "parcoursup", "jeunesse", "jeunes", "creche", "creches", "cantine"] },
+    { "id": "retraites", "nom": "Retraites", "emoji": "👵", "mots": ["retraite", "retraites", "retraites", "pension", "pensions", "age de depart", "agirc-arrco", "carsat", "minimum vieillesse"] },
+    { "id": "transports", "nom": "Transports", "emoji": "🚆", "mots": ["sncf", "train", "trains", "ter", "tgv", "transports", "transport", "bus", "metro", "tramway", "autoroute", "autoroutes", "peage", "peages", "limitation de vitesse", "permis de conduire", "voiture electrique", "aeroport", "ratp", "mobilite", "covoiturage", "routes"] },
+    { "id": "environnement", "nom": "Environnement & climat", "emoji": "🌱", "mots": ["climat", "climatique", "ecologie", "ecologique", "environnement", "pollution", "secheresse", "inondation", "inondations", "biodiversite", "pesticides", "glyphosate", "energies renouvelables", "nucleaire", "eolien", "eoliennes", "photovoltaique", "dechets", "recyclage", "canicule", "eau potable", "nappes phreatiques"] },
+    { "id": "agriculture", "nom": "Agriculture & alimentation", "emoji": "🌾", "mots": ["agriculteur", "agriculteurs", "agriculture", "agricole", "paysans", "eleveurs", "elevage", "fnsea", "pac", "alimentation", "viticulteurs", "viticulture", "peche", "pecheurs", "mercosur", "loi duplomb"] },
+    { "id": "services-publics", "nom": "Services publics", "emoji": "🏛️", "mots": ["service public", "services publics", "la poste", "bureau de poste", "mairie", "mairies", "prefecture", "fonction publique", "collectivites", "france services", "caf", "guichet", "fermeture de classe", "fermeture d'ecole", "fermeture de la maternite"] },
+    { "id": "budget", "nom": "Impôts & budget public", "emoji": "🧾", "mots": ["impot", "impots", "taxe", "taxes", "budget", "deficit", "dette", "dette publique", "fiscalite", "fiscal", "tva", "niche fiscale", "loi de finances", "projet de loi de finances", "plfss", "cotisations", "economies budgetaires"] },
+    { "id": "democratie", "nom": "Démocratie & institutions", "emoji": "🗳️", "mots": ["assemblee nationale", "senat", "deputes", "depute", "senateurs", "gouvernement", "premier ministre", "president de la republique", "elysee", "referendum", "election", "elections", "municipales", "presidentielle", "legislatives", "49.3", "motion de censure", "constitution", "projet de loi", "proposition de loi", "conseil constitutionnel", "petition"] },
+    { "id": "securite", "nom": "Sécurité & justice", "emoji": "⚖️", "mots": ["police", "policiers", "gendarmerie", "gendarmes", "justice", "tribunal", "prison", "prisons", "securite", "delinquance", "magistrats", "juges", "narcotrafic", "videosurveillance"] },
+    { "id": "solidarite", "nom": "Solidarités & handicap", "emoji": "🤝", "mots": ["handicap", "handicapes", "pauvrete", "rsa", "minima sociaux", "allocation", "allocations", "aidants", "precarite", "aide sociale", "banque alimentaire", "restos du coeur", "aide alimentaire", "apl", "aah"] },
+    { "id": "monde", "nom": "Europe & monde", "emoji": "🌍", "mots": ["union europeenne", "parlement europeen", "commission europeenne", "europe", "europeens", "ukraine", "otan", "onu", "diplomatie", "guerre", "cessez-le-feu", "droits de douane"] }
+  ],
+  "regions": [
+    { "id": "hauts-de-france", "nom": "Hauts-de-France", "mots": ["hauts-de-france", "lille", "amiens", "roubaix", "tourcoing", "dunkerque", "calais", "pas-de-calais", "aisne", "oise", "valenciennes", "beauvais", "arras", "saint-quentin", "boulogne-sur-mer"] },
+    { "id": "normandie", "nom": "Normandie", "mots": ["normandie", "normand", "normands", "rouen", "caen", "le havre", "cherbourg", "calvados", "seine-maritime", "evreux", "alencon", "saint-lo", "dieppe"] },
+    { "id": "ile-de-france", "nom": "Île-de-France", "mots": ["ile-de-france", "francilien", "franciliens", "seine-saint-denis", "val-de-marne", "hauts-de-seine", "essonne", "yvelines", "val-d'oise", "seine-et-marne", "versailles", "creteil", "nanterre", "bobigny", "argenteuil", "montreuil"] },
+    { "id": "grand-est", "nom": "Grand Est", "mots": ["grand est", "strasbourg", "reims", "metz", "nancy", "mulhouse", "colmar", "troyes", "alsace", "lorraine", "moselle", "bas-rhin", "haut-rhin", "ardennes", "vosges", "meurthe-et-moselle", "haute-marne", "charleville-mezieres"] },
+    { "id": "bretagne", "nom": "Bretagne", "mots": ["bretagne", "breton", "bretons", "rennes", "brest", "quimper", "lorient", "vannes", "saint-brieuc", "saint-malo", "finistere", "morbihan", "cotes-d'armor", "ille-et-vilaine"] },
+    { "id": "pays-de-la-loire", "nom": "Pays de la Loire", "mots": ["pays de la loire", "nantes", "angers", "le mans", "la roche-sur-yon", "saint-nazaire", "laval", "loire-atlantique", "maine-et-loire", "sarthe", "mayenne", "vendee", "cholet"] },
+    { "id": "centre-val-de-loire", "nom": "Centre-Val de Loire", "mots": ["centre-val de loire", "orleans", "bourges", "blois", "chartres", "chateauroux", "loiret", "indre-et-loire", "eure-et-loir", "loir-et-cher"] },
+    { "id": "bourgogne-franche-comte", "nom": "Bourgogne-Franche-Comté", "mots": ["bourgogne", "franche-comte", "dijon", "besancon", "auxerre", "chalon-sur-saone", "macon", "nevers", "belfort", "montbeliard", "cote-d'or", "saone-et-loire", "yonne", "nievre", "doubs", "haute-saone"] },
+    { "id": "nouvelle-aquitaine", "nom": "Nouvelle-Aquitaine", "mots": ["nouvelle-aquitaine", "bordeaux", "limoges", "poitiers", "la rochelle", "pau", "bayonne", "biarritz", "angouleme", "perigueux", "niort", "mont-de-marsan", "agen", "gironde", "dordogne", "pyrenees-atlantiques", "charente-maritime", "deux-sevres", "haute-vienne", "correze", "lot-et-garonne", "pays basque"] },
+    { "id": "auvergne-rhone-alpes", "nom": "Auvergne-Rhône-Alpes", "mots": ["auvergne", "rhone-alpes", "lyon", "lyonnais", "grenoble", "saint-etienne", "clermont-ferrand", "annecy", "chambery", "villeurbanne", "isere", "haute-savoie", "drome", "ardeche", "puy-de-dome", "cantal", "haute-loire"] },
+    { "id": "occitanie", "nom": "Occitanie", "mots": ["occitanie", "toulouse", "toulousain", "montpellier", "montpellierain", "nimes", "perpignan", "beziers", "narbonne", "carcassonne", "albi", "montauban", "tarbes", "rodez", "sete", "la grande-motte", "lunel", "herault", "gard", "pyrenees-orientales", "haute-garonne", "tarn-et-garonne", "aveyron", "lozere", "ariege", "hautes-pyrenees"] },
+    { "id": "paca", "nom": "Provence-Alpes-Côte d'Azur", "mots": ["provence", "cote d'azur", "paca", "marseille", "marseillais", "nice", "toulon", "avignon", "aix-en-provence", "cannes", "antibes", "bouches-du-rhone", "alpes-maritimes", "vaucluse", "alpes-de-haute-provence", "hautes-alpes"] },
+    { "id": "corse", "nom": "Corse", "mots": ["corse", "ajaccio", "bastia", "porto-vecchio", "haute-corse", "corse-du-sud"] },
+    { "id": "guadeloupe", "nom": "Guadeloupe", "mots": ["guadeloupe", "pointe-a-pitre", "basse-terre"] },
+    { "id": "martinique", "nom": "Martinique", "mots": ["martinique", "fort-de-france"] },
+    { "id": "guyane", "nom": "Guyane", "mots": ["guyane", "cayenne", "kourou"] },
+    { "id": "la-reunion", "nom": "La Réunion", "mots": ["la reunion", "reunionnais", "reunionnaise"] },
+    { "id": "mayotte", "nom": "Mayotte", "mots": ["mayotte", "mamoudzou", "mahorais"] }
+  ],
+  "exclus": ["mort", "morts", "mortel", "mortelle", "tue", "tuee", "tues", "meurtre", "meurtrier", "assassinat", "assassine", "deces", "decede", "decedee", "drame", "accident", "accidents", "agression", "agresse", "agressee", "viol", "violee", "victime", "victimes", "noyade", "noye", "disparition", "disparu", "disparue", "enlevement", "suicide", "cadavre", "corps sans vie", "braquage", "fusillade", "attentat", "poignarde", "feminicide", "pedocriminalite", "match", "ligue 1", "ligue des champions", "football", "rugby", "tennis", "basket", "handball", "mercato", "psg", "olympique de marseille", "top 14", "star academy", "miss france", "tele-realite", "horoscope", "meteo", "loto", "euromillions", "jeu concours", "bon plan", "promo", "soldes"],
+  "types": {
+    "mesure": {
+      "mots": ["projet de loi", "proposition de loi", "reforme", "decret", "amendement", "loi de finances", "budget", "taxe", "impot", "hausse de", "baisse de", "suppression", "supprimer", "interdiction", "interdire", "obligation", "obligatoire", "le gouvernement veut", "le gouvernement propose", "le gouvernement annonce", "veut instaurer", "plafonnement", "gel des", "nouvelle mesure", "mesures"],
+      "question": "Sur cette mesure, d'après ce que vous en savez :",
+      "choix": ["Plutôt pour", "Plutôt contre", "Je ne sais pas"]
+    },
+    "mobilisation": {
+      "mots": ["greve", "greves", "grevistes", "manifestation", "manifestations", "manifestants", "mobilisation", "intersyndicale", "appel a la greve", "syndicats appellent", "preavis"],
+      "question": "Soutenez-vous ce mouvement ?",
+      "choix": ["Oui", "Non", "Sans avis"]
+    },
+    "importance": {
+      "mots": [],
+      "question": "Ce sujet compte-t-il pour vous ?",
+      "choix": ["Beaucoup", "Un peu", "Pas du tout"]
+    }
+  },
+  "auteurs": [
+    { "id": "syndicat", "nom": "Syndicat", "emoji": "✊" },
+    { "id": "association", "nom": "Association", "emoji": "🤝" },
+    { "id": "collectif", "nom": "Collectif d'habitants", "emoji": "🏘️" },
+    { "id": "citoyen", "nom": "Citoyen ou citoyenne", "emoji": "🙋" },
+    { "id": "elu", "nom": "Élu ou élue", "emoji": "🏛️" },
+    { "id": "entreprise", "nom": "Commerce ou entreprise", "emoji": "🏪" }
+  ]
+}

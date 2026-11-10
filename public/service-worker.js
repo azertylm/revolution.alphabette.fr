@@ -9,7 +9,7 @@
    cache. On ne sert jamais un résultat figé à la place d'un résultat frais.
    ========================================================================== */
 
-const CACHE = 'revolution-v1';
+const CACHE = 'revolution-v2';
 const COQUILLE = ['/', '/index.html', '/manifest.webmanifest', '/icone.svg'];
 
 self.addEventListener('install', (event) => {
@@ -39,6 +39,8 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(requete.url);
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith('/api')) return;
+  // L'actualité change toutes les 3 heures : jamais servie depuis le cache.
+  if (url.pathname.endsWith('/actu.json')) return;
 
   // Navigation : réseau d'abord, cache en secours (jamais de page figée).
   if (requete.mode === 'navigate') {

@@ -1,0 +1,246 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Connectivity test endpoint
+    match /test/{docId} {
+      allow read, write: if true;
+    }
+    
+    // Primitives & Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function incoming() {
+      return request.resource.data;
+    }
+    
+    function existing() {
+      return resource.data;
+    }
+
+    // Validation Blueprints
+    function isValidSubscription(data) {
+      return (!('status' in data) || (data.status is string && data.status in ['free', 'active', 'expired', 'founder']))
+        && (!('planName' in data) || (data.planName is string && data.planName.size() <= 200))
+        && (!('subscribedApps' in data) || (data.subscribedApps is list && data.subscribedApps.size() <= 30))
+        && (!('expiresAt' in data) || data.expiresAt == null || (data.expiresAt is string && data.expiresAt.size() <= 100))
+        && (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 100))
+        && (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 100))
+        && (!('customerEmail' in data) || (data.customerEmail is string && data.customerEmail.size() <= 250))
+        && (!('appSource' in data) || (data.appSource is string && data.appSource.size() <= 200))
+        && (!('isFounder' in data) || data.isFounder is bool)
+        && (!('founderNumber' in data) || (data.founderNumber is number && data.founderNumber >= 1 && data.founderNumber <= 1000))
+        && (!('perpetual' in data) || data.perpetual is bool);
+    }
+
+    function isValidProposedArticle(data) {
+      return (!('title' in data) || (data.title is string && data.title.size() <= 300))
+        && (!('source' in data) || (data.source is string && data.source.size() <= 150))
+        && (!('category' in data) || (data.category is string && data.category.size() <= 150))
+        && (!('emoji' in data) || (data.emoji is string && data.emoji.size() <= 20))
+        && (!('tags' in data) || (data.tags is list && data.tags.size() <= 30))
+        && (!('summary' in data) || (data.summary is string && data.summary.size() <= 3000))
+        && (!('content' in data) || (data.content is string && data.content.size() <= 100000))
+        && (!('score' in data) || (data.score is number && data.score >= 0 && data.score <= 100))
+        && (!('authorName' in data) || (data.authorName is string && data.authorName.size() <= 150))
+        && (!('authorEmail' in data) || (data.authorEmail is string && data.authorEmail.size() <= 250))
+        && (!('authorUid' in data) || (data.authorUid is string && data.authorUid.size() <= 256))
+        && (!('authorVerified' in data) || data.authorVerified is bool)
+        && (!('authorCertified' in data) || data.authorCertified is bool)
+        && (!('aiFactCheckScore' in data) || (data.aiFactCheckScore is number && data.aiFactCheckScore >= 0 && data.aiFactCheckScore <= 100))
+        && (!('aiFactCheckVerdict' in data) || (data.aiFactCheckVerdict is string && data.aiFactCheckVerdict.size() <= 1000))
+        && (!('aiFactualConsistency' in data) || (data.aiFactualConsistency is number && data.aiFactualConsistency >= 0 && data.aiFactualConsistency <= 100))
+        && (!('aiJournalisticStyle' in data) || (data.aiJournalisticStyle is number && data.aiJournalisticStyle >= 0 && data.aiJournalisticStyle <= 100))
+        && (!('aiRelevanceToCurrentEvents' in data) || (data.aiRelevanceToCurrentEvents is number && data.aiRelevanceToCurrentEvents >= 0 && data.aiRelevanceToCurrentEvents <= 100))
+        && (!('aiKeyStrengths' in data) || (data.aiKeyStrengths is list && data.aiKeyStrengths.size() <= 30))
+        && (!('aiImprovements' in data) || (data.aiImprovements is list && data.aiImprovements.size() <= 30))
+        && (!('aiCertifiedBadge' in data) || (data.aiCertifiedBadge is string && data.aiCertifiedBadge.size() <= 150))
+        && (!('newsAngle' in data) || (data.newsAngle is string && data.newsAngle.size() <= 1000))
+        && (!('ratingsCount' in data) || (data.ratingsCount is number && data.ratingsCount >= 0))
+        && (!('averageRating' in data) || (data.averageRating is number && data.averageRating >= 0 && data.averageRating <= 5))
+        && (!('ratings' in data) || (data.ratings is list && data.ratings.size() <= 1000))
+        && (!('likes' in data) || (data.likes is number && data.likes >= 0))
+        && (!('flags' in data) || (data.flags is number && data.flags >= 0));
+    }
+
+    function isValidCommunityComment(data) {
+      return (!('articleId' in data) || (data.articleId is string && data.articleId.size() <= 256))
+        && (!('authorName' in data) || (data.authorName is string && data.authorName.size() <= 150))
+        && (!('authorEmail' in data) || (data.authorEmail is string && data.authorEmail.size() <= 250))
+        && (!('authorUid' in data) || (data.authorUid is string && data.authorUid.size() <= 256))
+        && (!('content' in data) || (data.content is string && data.content.size() <= 5000))
+        && (!('likes' in data) || (data.likes is number && data.likes >= 0));
+    }
+
+    function isValidUserProfile(data) {
+      return (!('uid' in data) || (data.uid is string && data.uid.size() <= 256))
+        && (!('email' in data) || (data.email is string && data.email.size() <= 250))
+        && (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 150))
+        && (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 2000))
+        && (!('themeMode' in data) || data.themeMode is string)
+        && (!('displayMode' in data) || data.displayMode is string)
+        && (!('isEasyMode' in data) || data.isEasyMode is bool)
+        && (!('easyModeLevel' in data) || (data.easyModeLevel is number && data.easyModeLevel >= 0 && data.easyModeLevel <= 10))
+        && (!('curiosityScore' in data) || (data.curiosityScore is number && data.curiosityScore >= 0))
+        && (!('savedArticleIds' in data) || (data.savedArticleIds is list && data.savedArticleIds.size() <= 1000))
+        && (!('readArticleIds' in data) || (data.readArticleIds is list && data.readArticleIds.size() <= 5000))
+        && (!('unlockedBadges' in data) || (data.unlockedBadges is list && data.unlockedBadges.size() <= 100))
+        && (!('customCategories' in data) || (data.customCategories is list && data.customCategories.size() <= 50))
+        && (!('customTitle' in data) || (data.customTitle is string && data.customTitle.size() <= 200))
+        && (!('followedTags' in data) || (data.followedTags is list && data.followedTags.size() <= 100))
+        && (!('blacklistedTags' in data) || (data.blacklistedTags is list && data.blacklistedTags.size() <= 100))
+        && (!('lastActiveDevice' in data) || (data.lastActiveDevice is string && data.lastActiveDevice.size() <= 100))
+        && (!('lastSyncAt' in data) || (data.lastSyncAt is string && data.lastSyncAt.size() <= 150))
+        && (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 150));
+    }
+
+    // 1. Shared Multi-App Subscription collection (PII Protected)
+    match /subscriptions/{userId} {
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow create, update: if isSignedIn() && request.auth.uid == userId 
+                            && isValidSubscription(incoming());
+      allow delete: if false; // Subscriptions are immortal
+    }
+
+    // 2. Proposed articles collection
+    match /proposed_articles/{articleId} {
+      allow read: if true;
+      
+      allow create: if isSignedIn()
+                    && isValidProposedArticle(incoming())
+                    && incoming().authorUid == request.auth.uid;
+                    
+      allow update: if true;
+      
+      allow delete: if isSignedIn() && request.auth.uid == existing().authorUid;
+    }
+
+    // 3. Community comments
+    match /community_comments/{commentId} {
+      allow read: if true;
+      
+      allow create: if isSignedIn()
+                    && isValidCommunityComment(incoming())
+                    && incoming().authorUid == request.auth.uid;
+                    
+      allow update: if true;
+      
+      allow delete: if isSignedIn() && request.auth.uid == existing().authorUid;
+    }
+
+    // 4. User profile & Cross-device synchronization for PC, Tablet, Mobile
+    match /users/{userId} {
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow create, update: if isSignedIn() && request.auth.uid == userId 
+                            && isValidUserProfile(incoming());
+      allow delete: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // ================================================================
+    // RÉVOLUTION (revolution.alphabette.fr) — recueil partagé des réponses
+    // Bloc à coller juste avant la dernière accolade du bloc
+    // « match /databases/{database}/documents { … } ».
+    // Seuls les compteurs sont publics ; une réponse individuelle n'est
+    // lisible que par son auteur ; un appareil ne compte qu'une fois.
+    // ================================================================
+
+    function revConnecte() {
+      return request.auth != null;
+    }
+
+    function revReponse(qid) {
+      return /databases/$(database)/documents/revolution_reponses/$(qid + '_' + request.auth.uid);
+    }
+
+    function revUnVote(qid, avant, apres) {
+      let choix = getAfter(revReponse(qid)).data.choix;
+      return revConnecte()
+        && !exists(revReponse(qid))
+        && existsAfter(revReponse(qid))
+        && apres.keys().hasOnly(['c0', 'c1', 'c2', 'c3'])
+        && apres.c0 == avant.c0 + (choix == 0 ? 1 : 0)
+        && apres.c1 == avant.c1 + (choix == 1 ? 1 : 0)
+        && apres.c2 == avant.c2 + (choix == 2 ? 1 : 0)
+        && apres.c3 == avant.c3 + (choix == 3 ? 1 : 0);
+    }
+
+    function revTexte(v, min, max) {
+      return v is string && v.size() >= min && v.size() <= max;
+    }
+
+    function revChoixValides(l) {
+      return l is list && l.size() >= 2 && l.size() <= 4
+        && revTexte(l[0], 1, 40) && revTexte(l[1], 1, 40)
+        && (l.size() < 3 || revTexte(l[2], 1, 40))
+        && (l.size() < 4 || revTexte(l[3], 1, 40));
+    }
+
+    match /revolution_compteurs/{qid} {
+      allow read: if true;
+      allow create: if revUnVote(qid, {'c0': 0, 'c1': 0, 'c2': 0, 'c3': 0}, request.resource.data);
+      allow update: if revUnVote(qid, resource.data, request.resource.data);
+      allow delete: if false;
+    }
+
+    match /revolution_reponses/{rid} {
+      allow get: if revConnecte() && rid.matches('^.+_' + request.auth.uid + '$');
+      allow list: if false;
+      allow create: if revConnecte()
+        && request.resource.data.keys().hasOnly(['questionId', 'choix', 'uid', 'creeLe'])
+        && revTexte(request.resource.data.questionId, 3, 80)
+        && rid == request.resource.data.questionId + '_' + request.auth.uid
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.choix is int
+        && request.resource.data.choix >= 0 && request.resource.data.choix <= 3
+        && request.resource.data.creeLe == request.time
+        && existsAfter(/databases/$(database)/documents/revolution_compteurs/$(request.resource.data.questionId));
+      allow update, delete: if false;
+    }
+
+    match /revolution_questions/{qid} {
+      allow read: if true;
+      allow create: if revConnecte()
+        && request.resource.data.keys().hasOnly(['texte', 'contexte', 'choix', 'auteurType', 'auteurNom', 'territoire', 'lien', 'signalements', 'uid', 'creeLe'])
+        && revTexte(request.resource.data.texte, 10, 200)
+        && revTexte(request.resource.data.contexte, 0, 600)
+        && revChoixValides(request.resource.data.choix)
+        && request.resource.data.auteurType in ['syndicat', 'association', 'collectif', 'citoyen', 'elu', 'entreprise']
+        && revTexte(request.resource.data.auteurNom, 2, 80)
+        && revTexte(request.resource.data.territoire, 2, 40)
+        && revTexte(request.resource.data.lien, 0, 300)
+        && (request.resource.data.lien == '' || request.resource.data.lien.matches('^https://.+'))
+        && request.resource.data.signalements == 0
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.creeLe == request.time;
+      // Seul changement permis : +1 signalement, accompagné du signalement lui-même.
+      allow update: if revConnecte()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['signalements'])
+        && request.resource.data.signalements == resource.data.signalements + 1
+        && !exists(/databases/$(database)/documents/revolution_signalements/$(qid + '_' + request.auth.uid))
+        && existsAfter(/databases/$(database)/documents/revolution_signalements/$(qid + '_' + request.auth.uid));
+      allow delete: if revConnecte() && resource.data.uid == request.auth.uid;
+    }
+
+    match /revolution_signalements/{sid} {
+      allow get: if revConnecte() && sid.matches('^.+_' + request.auth.uid + '$');
+      allow list: if false;
+      allow create: if revConnecte()
+        && request.resource.data.keys().hasOnly(['questionId', 'uid', 'creeLe'])
+        && revTexte(request.resource.data.questionId, 3, 80)
+        && sid == request.resource.data.questionId + '_' + request.auth.uid
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.creeLe == request.time
+        && getAfter(/databases/$(database)/documents/revolution_questions/$(request.resource.data.questionId)).data.signalements
+           == get(/databases/$(database)/documents/revolution_questions/$(request.resource.data.questionId)).data.signalements + 1;
+      allow update, delete: if false;
+    }
+    // ===================== fin du bloc Révolution =====================
+  }
+}

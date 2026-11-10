@@ -1,41 +1,26 @@
 import type { ReactNode } from 'react';
-import { nombre, statsQuestion } from './outils';
-import type { Question } from './types';
+import { nombre } from './donnees';
 
 /* ==========================================================================
-   Les briques d'interface — version « affiche », pensée pour le pouce.
-
-   · tout est gros, contrasté, avec une ombre dure ;
-   · une cible tactile ne descend jamais sous 56 px ;
-   · les pourcentages sont écrits en énorme, directement dans les barres.
+   Les briques d'interface — version « affiche », pensée pour le pouce :
+   tout est gros, contrasté, avec une ombre dure ; une cible tactile ne
+   descend jamais sous 56 px.
    ========================================================================== */
 
 export function Panneau({
   children,
   className = '',
   accent,
-  dure,
 }: {
   children: ReactNode;
   className?: string;
   accent?: 'jaune' | 'rouge';
-  dure?: boolean;
 }) {
   const teinte = accent === 'jaune' ? 'bloc-jaune' : accent === 'rouge' ? 'bloc-rouge' : '';
-  return (
-    <section className={`bloc ${teinte} ${dure ? 'ombre-dure' : ''} p-4 sm:p-5 ${className}`}>{children}</section>
-  );
+  return <section className={`bloc ${teinte} p-4 sm:p-5 ${className}`}>{children}</section>;
 }
 
-export function Badge({
-  children,
-  ton = 'gris',
-  className = '',
-}: {
-  children: ReactNode;
-  ton?: 'jaune' | 'rouge' | 'gris' | 'vert';
-  className?: string;
-}) {
+export function Badge({ children, ton = 'gris' }: { children: ReactNode; ton?: 'jaune' | 'rouge' | 'gris' | 'vert' }) {
   const tons: Record<string, string> = {
     jaune: 'bg-jaune text-black',
     rouge: 'bg-rouge text-white',
@@ -43,24 +28,13 @@ export function Badge({
     gris: 'bg-carte2 text-gris border-2 border-bord',
   };
   return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-black uppercase tracking-wide ${tons[ton]} ${className}`}
-    >
+    <span className={`inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-[11px] font-black uppercase tracking-wide ${tons[ton]}`}>
       {children}
     </span>
   );
 }
 
-/** Titre de section : bandeau jaune penché, comme un titre de manif. */
-export function TitreSection({
-  children,
-  droite,
-  rouge,
-}: {
-  children: ReactNode;
-  droite?: ReactNode;
-  rouge?: boolean;
-}) {
+export function Titre({ children, droite, rouge }: { children: ReactNode; droite?: ReactNode; rouge?: boolean }) {
   return (
     <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
       <h2 className={`bandeau affiche text-base sm:text-xl ${rouge ? 'bandeau-rouge' : ''}`}>{children}</h2>
@@ -74,26 +48,24 @@ export function GrosBouton({
   onClick,
   variante = 'jaune',
   disabled,
-  titre,
+  type = 'button',
   className = '',
 }: {
   children: ReactNode;
   onClick?: () => void;
-  variante?: 'jaune' | 'rouge' | 'neutre' | 'vert';
+  variante?: 'jaune' | 'rouge' | 'neutre';
   disabled?: boolean;
-  titre?: string;
+  type?: 'button' | 'submit';
   className?: string;
 }) {
   const variantes: Record<string, string> = {
     jaune: 'bg-jaune text-black ombre-dure-jaune active:translate-y-[3px] active:shadow-none',
     rouge: 'bg-rouge text-white ombre-dure-rouge active:translate-y-[3px] active:shadow-none',
-    vert: 'bg-emerald-500 text-black ombre-dure active:translate-y-[3px] active:shadow-none',
     neutre: 'bg-carte2 text-texte border-[3px] border-bord active:bg-bord',
   };
   return (
     <button
-      type="button"
-      title={titre}
+      type={type}
       disabled={disabled}
       onClick={onClick}
       className={`affiche min-h-[3.5rem] rounded-xl px-5 py-3 text-sm leading-tight disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none ${variantes[variante]} ${className}`}
@@ -103,82 +75,83 @@ export function GrosBouton({
   );
 }
 
-/** Barre de résultat segmentée, avec le pourcentage écrit dans la barre. */
-export function Jauge({ oui, non, sansAvis, hauteur = 30 }: { oui: number; non: number; sansAvis: number; hauteur?: number }) {
-  const total = Math.max(1, oui + non + sansAvis);
-  const parts = [
-    { valeur: (oui / total) * 100, classe: 'bg-jaune', texte: 'text-black' },
-    { valeur: (non / total) * 100, classe: 'bg-rouge', texte: 'text-white' },
-    { valeur: (sansAvis / total) * 100, classe: 'bg-[#6b6b6b]', texte: 'text-white' },
-  ];
-  return (
-    <div className="barre-resultat" style={{ height: hauteur }} role="img" aria-label="Répartition des votes">
-      {parts.map((p, i) => (
-        <span
-          key={i}
-          className={`${p.classe} ${p.texte}`}
-          style={{ width: `${p.valeur}%`, minWidth: p.valeur > 0 ? '0.9rem' : 0 }}
-        >
-          {p.valeur >= 12 ? `${Math.round(p.valeur)} %` : ''}
-        </span>
-      ))}
-    </div>
-  );
-}
-
-/** La barre d'une question, avec les chiffres en dessous — gros et lisibles. */
-export function JaugeQuestion({ question, compact }: { question: Question; compact?: boolean }) {
-  const st = statsQuestion(question);
-  return (
-    <div className="space-y-2">
-      <Jauge oui={question.oui} non={question.non} sansAvis={question.sansAvis} hauteur={compact ? 22 : 32} />
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] font-black uppercase tracking-wide">
-        <span className="text-jaune">■ {Math.round(st.ouiPct)} % OUI</span>
-        <span className="text-rouge">■ {Math.round(st.nonPct)} % NON</span>
-        <span className="text-gris">■ {Math.round(st.sansPct)} % sans avis</span>
-        <span className="text-texte">{nombre(st.total)} votants simulés</span>
-        {question.budgetMoyen > 0 && <span className="text-jaune-clair">{Math.round(question.budgetMoyen)} pts</span>}
-      </div>
-    </div>
-  );
-}
-
-/** Grand chiffre, style compteur de manifestation. */
-export function Compteur({
-  valeur,
-  legende,
-  ton = 'jaune',
-  suffixe,
-  classeValeur,
+export function Puce({
+  children,
+  actif,
+  onClick,
 }: {
-  valeur: string | number;
-  legende: string;
-  ton?: 'jaune' | 'rouge' | 'texte';
-  suffixe?: string;
-  classeValeur?: string;
+  children: ReactNode;
+  actif?: boolean;
+  onClick: () => void;
 }) {
-  const couleurs = { jaune: 'text-jaune', rouge: 'text-rouge', texte: 'text-texte' };
   return (
-    <div className="bloc px-3 py-3 text-center">
-      <div className={`affiche-large ${classeValeur ?? 'text-3xl sm:text-4xl'} ${couleurs[ton]}`}>
-        {typeof valeur === 'number' ? nombre(valeur) : valeur}
-        {suffixe}
-      </div>
-      <div className="mt-1 text-[10px] font-black uppercase tracking-[0.12em] text-gris">{legende}</div>
-    </div>
-  );
-}
-
-export function Etiquette({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-lg border-2 border-bord bg-carte2 px-2 py-1 text-[11px] font-black uppercase tracking-wide text-gris ${className}`}
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={actif}
+      className={`min-h-11 rounded-xl border-[3px] px-3 py-2 text-left text-sm font-bold ${
+        actif ? 'border-jaune bg-jaune text-black' : 'border-bord bg-carte2 text-texte'
+      }`}
     >
       {children}
-    </span>
+    </button>
   );
 }
 
-export function Choix({ children }: { children: ReactNode }) {
-  return <div className="flex flex-wrap gap-2">{children}</div>;
+const TEINTES = ['bg-jaune text-black', 'bg-rouge text-white', 'bg-carte2 text-texte', 'bg-emerald-500 text-black'];
+
+/**
+ * Les gros carrés de réponse. Les pourcentages des autres ne s'affichent
+ * qu'APRÈS ta réponse, pour ne pas influencer ton choix.
+ */
+export function Carres({
+  choix,
+  monChoix,
+  compteurs,
+  onChoisir,
+  occupe,
+}: {
+  choix: string[];
+  monChoix: number | null;
+  compteurs: number[] | null;
+  onChoisir: (i: number) => void;
+  occupe?: boolean;
+}) {
+  const total = compteurs ? compteurs.reduce((a, b) => a + b, 0) : 0;
+  const voirResultats = monChoix !== null && compteurs !== null && total > 0;
+  return (
+    <div>
+      <div className={`grid gap-2 ${choix.length === 4 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+        {choix.map((c, i) => {
+          const pctVal = voirResultats ? Math.round(((compteurs?.[i] ?? 0) / total) * 100) : null;
+          const choisi = monChoix === i;
+          return (
+            <button
+              key={c}
+              type="button"
+              disabled={monChoix !== null || occupe}
+              onClick={() => onChoisir(i)}
+              aria-pressed={choisi}
+              className={`relative min-h-[4.5rem] overflow-hidden rounded-xl border-[3px] px-2 py-2 text-center ${
+                choisi ? `border-transparent ${TEINTES[i % 4]}` : 'border-bord bg-carte2 text-texte'
+              } ${monChoix !== null && !choisi ? 'opacity-70' : ''}`}
+            >
+              {pctVal !== null && !choisi && (
+                <span className="absolute inset-y-0 left-0 bg-bord/60" style={{ width: `${pctVal}%` }} aria-hidden="true" />
+              )}
+              <span className="relative block text-sm font-black leading-tight">{c}</span>
+              {pctVal !== null && <span className="affiche-large relative block text-2xl">{pctVal} %</span>}
+              {choisi && <span className="relative block text-[10px] font-black uppercase">ton choix</span>}
+            </button>
+          );
+        })}
+      </div>
+      {voirResultats && (
+        <p className="mt-2 text-xs text-gris">
+          {nombre(total)} réponse{total > 1 ? 's' : ''} sur Révolution — consultation ouverte, pas un sondage
+          représentatif.
+        </p>
+      )}
+    </div>
+  );
 }
