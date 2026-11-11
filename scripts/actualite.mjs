@@ -71,7 +71,7 @@ const motifs = new Map();
 function contient(texteNormalise, mot) {
   let re = motifs.get(mot);
   if (!re) {
-    re = new RegExp(`(^|[^a-z0-9])${echapRe(mot)}([^a-z0-9]|$)`);
+    re = new RegExp(`(^|[^a-z0-9-])${echapRe(mot)}([^a-z0-9-]|$)`);
     motifs.set(mot, re);
   }
   return re.test(texteNormalise);
@@ -106,6 +106,7 @@ function lireFlux(xml, flux) {
         titre = morceaux.slice(0, -1).join(' - ');
       }
     }
+    const domaine = (bloc.match(/<source[^>]*url="https?:\/\/([^"/]+)/i)?.[1] ?? '').toLowerCase();
     const lien = sansBalises(balise(bloc, 'link')) || (bloc.match(/<link[^>]*href="([^"]+)"/i)?.[1] ?? '');
     const date = new Date(sansBalises(balise(bloc, 'pubDate')) || sansBalises(balise(bloc, 'dc:date')));
     let resume = sansBalises(balise(bloc, 'description'));
@@ -119,6 +120,7 @@ function lireFlux(xml, flux) {
       date: date.toISOString(),
       resume: resume.length > 280 ? `${resume.slice(0, 277).replace(/\s+\S*$/, '')}…` : resume,
       regionFlux: flux.region ?? null,
+      fiable: !flux.url.includes('news.google.com') || sourceFiable(domaine),
     });
   }
   return items;
@@ -161,6 +163,11 @@ function empreinte(texte) {
   return (h >>> 0).toString(36);
 }
 
+const DOMAINES = reperes.sources.domaines;
+function sourceFiable(domaine) {
+  return Boolean(domaine) && DOMAINES.some((d) => domaine === d || domaine.endsWith(`.${d}`));
+}
+
 const motsDe = (t) => new Set(normaliser(t).split(/[^a-z0-9]+/).filter((m) => m.length > 3));
 function proches(a, b) {
   let commun = 0;
@@ -184,13 +191,16 @@ for (const { items, flux: f } of recolte) {
   for (const it of recents) {
     const n = normaliser(`${it.titre} ${it.resume}`);
     const nt = normaliser(it.titre);
+    if (!it.fiable) continue;
     if (reperes.exclus.some((m) => contient(nt, m))) continue;
 
     const themes = reperes.themes.filter((t) => t.mots.some((m) => contient(n, m))).map((t) => t.id);
     const regionsTrouvees = reperes.regions.filter((r) => r.mots.some((m) => contient(n, m))).map((r) => r.id);
+    // Un sujet régional doit vraiment parler de sa région (nom, ville ou département dans le texte).
+    if (it.regionFlux && !regionsTrouvees.includes(it.regionFlux)) continue;
     const region = it.regionFlux ?? (regionsTrouvees.length === 1 ? regionsTrouvees[0] : null);
-    // Un sujet national sans aucun thème civique reconnu n'est pas retenu.
-    if (!region && themes.length === 0) continue;
+    // Seuls les sujets de vie publique sont retenus : au moins un thème civique reconnu.
+    if (themes.length === 0) continue;
 
     const type = contient(nt, 'greve') || reperes.types.mobilisation.mots.some((m) => contient(nt, m))
       ? 'mobilisation'
@@ -210,10 +220,17 @@ for (const { items, flux: f } of recolte) {
   }
 }
 
+const parRegion = new Map();
 const sujets = retenus
   .sort((a, b) => b.date.localeCompare(a.date))
+  .filter((s) => {
+    if (!s.region) return true;
+    const n = (parRegion.get(s.region) ?? 0) + 1;
+    parRegion.set(s.region, n);
+    return n <= 6;
+  })
   .slice(0, MAX_SUJETS)
-  .map(({ mots: _m, regionFlux: _r, ...s }) => ({
+  .map(({ mots: _m, regionFlux: _r, fiable: _f, ...s }) => ({
     id: `actu_${empreinte(normaliser(s.titre))}`,
     ...s,
     question: reperes.types[s.type].question,
