@@ -231,3 +231,7 @@ await writeFile(path.join(sortie, 'actu.json'), JSON.stringify(resultat) + '\n')
 const okFlux = recolte.filter((r) => r.ok).length;
 console.log(`actualité : ${sujets.length} sujets retenus — ${okFlux}/${recolte.length} flux lus.`);
 for (const r of recolte.filter((x) => !x.ok)) console.warn(`! ${r.flux.nom} : ${r.erreur}`);
+// Échantillon lisible dans le journal de publication, pour vérifier la qualité des questions.
+for (const s of sujets.slice(0, 40)) {
+  console.log(`  · [${s.type}] ${s.region ?? 'national'} | ${s.themes.join(',') || '-'} | ${s.source} | ${s.titre}`);
+}
