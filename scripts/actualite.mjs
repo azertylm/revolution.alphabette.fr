@@ -168,11 +168,12 @@ function sourceFiable(domaine) {
   return Boolean(domaine) && DOMAINES.some((d) => domaine === d || domaine.endsWith(`.${d}`));
 }
 
-const motsDe = (t) => new Set(normaliser(t).split(/[^a-z0-9]+/).filter((m) => m.length > 3));
+// Racines de 5 lettres : « baisse » et « baisser », « bloquer » et « blocage » se rapprochent.
+const motsDe = (t) => new Set(normaliser(t).split(/[^a-z0-9]+/).filter((m) => m.length > 3).map((m) => m.slice(0, 5)));
 function proches(a, b) {
   let commun = 0;
   for (const m of a) if (b.has(m)) commun += 1;
-  return commun / Math.max(1, Math.min(a.size, b.size)) >= 0.6;
+  return commun >= 3 || commun / Math.max(1, Math.min(a.size, b.size)) >= 0.6;
 }
 
 /* ------------------------------------------------------------------------ */

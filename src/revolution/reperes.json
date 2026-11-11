@@ -795,7 +795,26 @@
     "jeu video",
     "ps5",
     "switch 2",
-    "iphone"
+    "iphone",
+    "agressions",
+    "agression sexuelle",
+    "agressions sexuelles",
+    "garde a vue",
+    "interpelle",
+    "interpellee",
+    "interpelles",
+    "mis en examen",
+    "mise en examen",
+    "condamne",
+    "condamnee",
+    "condamnes",
+    "caillasse",
+    "edito",
+    "editorial",
+    "tribune",
+    "chronique",
+    "billet d'humeur",
+    "people"
   ],
   "types": {
     "mesure": {
