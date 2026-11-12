@@ -124,7 +124,7 @@ export function ALaUne() {
       <Titre
         droite={
           actu ? (
-            <span className="text-[11px] text-gris">mis à jour {ilYa(actu.genereLe)} · toutes les 3 h</span>
+            <span className="text-[11px] text-gris">mis à jour {ilYa(actu.genereLe)} · plusieurs fois par jour</span>
           ) : undefined
         }
       >
@@ -187,7 +187,7 @@ export function ALaUne() {
               : filtre === 'repondu'
                 ? 'Tu n’as encore répondu à aucune question.'
                 : actu.sujets.length === 0
-                  ? 'Aucune actualité n’a pu être récoltée lors de la dernière mise à jour. Nouvel essai dans moins de trois heures.'
+                  ? 'Aucune actualité n’a pu être récoltée lors de la dernière mise à jour. Nouvel essai à la prochaine mise à jour.'
                   : 'Tu as répondu à tout ce qui est paru ici. Les prochaines questions arrivent avec la prochaine mise à jour.'}
           </p>
         </Panneau>

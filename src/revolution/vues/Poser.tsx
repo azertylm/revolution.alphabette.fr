@@ -263,7 +263,7 @@ export function Poser() {
           <input type="checkbox" checked={charte} onChange={(e) => setCharte(e.target.checked)} className="mt-1 h-5 w-5" />
           <span className="text-sm text-texte">
             Je respecte la charte : pas d’insulte, pas d’attaque contre une personne nommée, pas de fausse information,
-            pas d’appel à la haine. Je sais que ma question peut être retirée si elle est signalée.
+            pas d’appel à la haine, à la violence ni à des actions illégales. Je sais que ma question peut être retirée si elle est signalée.
           </span>
         </label>
 

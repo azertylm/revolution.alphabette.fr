@@ -8,7 +8,7 @@ import type { AlphaAppConfig } from '@alphabette/shell';
 export const APP: AlphaAppConfig = {
   key: 'revolution',
   name: 'Révolution',
-  tagline: 'À force de tirer sur le fil du peuple, il casse.',
+  tagline: 'L’actualité, ton avis, celui des autres.',
 
   // Couleur d'identité du site : toute la base s'y adapte.
   accent: '#C8102E',

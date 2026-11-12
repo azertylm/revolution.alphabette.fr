@@ -20,7 +20,7 @@ export function Comment() {
       <Panneau className="space-y-2">
         <p className="affiche text-jaune">1. Les questions du moment</p>
         <p className="text-sm text-texte">
-          Toutes les trois heures, Révolution lit l’actualité publique (franceinfo et Google Actualités, par thème et par
+          Plusieurs fois par jour (toutes les trois heures environ, de la matinée à la soirée), Révolution lit l’actualité publique (franceinfo et Google Actualités, par thème et par
           région). Les faits divers, le sport et les jeux sont écartés. Chaque sujet garde le lien vers son article.
         </p>
         <p className="text-sm text-texte">
@@ -52,8 +52,8 @@ export function Comment() {
         <p className="affiche text-jaune">3. Tes réponses</p>
         <p className="text-sm text-texte">
           Tes réponses sont anonymes : aucun nom, aucun e-mail, aucune position. Seul un identifiant technique
-          anonyme permet de compter une seule réponse par appareil. Personne ne peut voir ce que tu as répondu : seuls
-          les totaux sont publics, et ils ne s’affichent qu’après ta propre réponse, pour ne pas t’influencer.
+          anonyme permet de compter une seule réponse par appareil. Ta réponse individuelle n’est pas publique : seuls
+          les totaux le sont, et ils ne s’affichent qu’après ta propre réponse, pour ne pas t’influencer.
         </p>
         <p className="text-sm text-texte">
           Ce sont des consultations ouvertes : chacun peut répondre, les résultats ne représentent pas l’opinion de
