@@ -9,7 +9,8 @@ service cloud.firestore {
 
     // Connectivity test endpoint
     match /test/{docId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if false;
     }
     
     // Primitives & Helpers
@@ -104,8 +105,13 @@ service cloud.firestore {
     // 1. Shared Multi-App Subscription collection (PII Protected)
     match /subscriptions/{userId} {
       allow read: if isSignedIn() && request.auth.uid == userId;
+      // Aucun paiement n'existe côté client : un utilisateur ne peut pas s'attribuer
+      // lui-même un forfait payant ou « fondateur » (seul « free » est accepté).
       allow create, update: if isSignedIn() && request.auth.uid == userId 
-                            && isValidSubscription(incoming());
+                            && isValidSubscription(incoming())
+                            && (!('status' in incoming()) || incoming().status == 'free')
+                            && (!('isFounder' in incoming()) || incoming().isFounder == false)
+                            && (!('perpetual' in incoming()) || incoming().perpetual == false);
       allow delete: if false; // Subscriptions are immortal
     }
 
@@ -117,7 +123,12 @@ service cloud.firestore {
                     && isValidProposedArticle(incoming())
                     && incoming().authorUid == request.auth.uid;
                     
-      allow update: if true;
+      // Auteur : tout champ valide ; autre membre connecté : seulement likes / signalements / notes.
+      allow update: if isSignedIn()
+                    && isValidProposedArticle(incoming())
+                    && (existing().authorUid == request.auth.uid
+                        || request.resource.data.diff(resource.data).affectedKeys()
+                             .hasOnly(['likes', 'flags', 'ratings', 'ratingsCount', 'averageRating']));
       
       allow delete: if isSignedIn() && request.auth.uid == existing().authorUid;
     }
@@ -130,7 +141,10 @@ service cloud.firestore {
                     && isValidCommunityComment(incoming())
                     && incoming().authorUid == request.auth.uid;
                     
-      allow update: if true;
+      allow update: if isSignedIn()
+                    && isValidCommunityComment(incoming())
+                    && (existing().authorUid == request.auth.uid
+                        || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes']));
       
       allow delete: if isSignedIn() && request.auth.uid == existing().authorUid;
     }
