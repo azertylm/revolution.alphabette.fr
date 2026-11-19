@@ -9,14 +9,36 @@
    cache. On ne sert jamais un résultat figé à la place d'un résultat frais.
    ========================================================================== */
 
-const CACHE = 'revolution-v2';
-const COQUILLE = ['/', '/index.html', '/manifest.webmanifest', '/icone.svg'];
+const CACHE = 'revolution-v3';
+const COQUILLE = ['./', './index.html', './manifest.webmanifest', './icone.svg'];
+
+// Fichiers construits (JS, CSS) cités par la page : mis en cache dès l'installation.
+// Sans cela, la première visite n'en garde aucun et la page reste blanche hors ligne.
+async function precacherActifs(cache) {
+  const page = await cache.match('./');
+  if (!page) return;
+  const html = await page.text();
+  const actifs = [...new Set([...html.matchAll(/(?:src|href)="(\.?\/?assets\/[^"]+)"/g)].map((m) => m[1]))];
+  await Promise.all(actifs.map((a) => cache.add(a).catch(() => undefined)));
+  // Morceaux chargés à la demande (écrans « lazy ») : listés par Vite dans __vite__mapDeps du script principal.
+  for (const a of actifs.filter((x) => x.endsWith('.js'))) {
+    const script = await cache.match(a);
+    if (!script) continue;
+    const js = await script.text();
+    const debut = js.indexOf('__vite__mapDeps');
+    const liste = debut < 0 ? null : js.slice(debut).match(/\[([^\]]*)\]/);
+    if (!liste) continue;
+    const base = new URL(a, self.location.href);
+    const morceaux = [...liste[1].matchAll(/"([^"]+\.(?:js|css))"/g)].map((m) => new URL(m[1], base).href);
+    await Promise.all(morceaux.map((m) => cache.add(m).catch(() => undefined)));
+  }
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches
       .open(CACHE)
-      .then((cache) => cache.addAll(COQUILLE))
+      .then((cache) => cache.addAll(COQUILLE).then(() => precacherActifs(cache)))
       .then(() => self.skipWaiting())
       .catch(() => undefined),
   );
@@ -38,7 +60,7 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(requete.url);
   if (url.origin !== self.location.origin) return;
-  if (url.pathname.startsWith('/api')) return;
+  if (url.pathname.includes('/api/')) return;
   // L'actualité change toutes les 3 heures : jamais servie depuis le cache.
   if (url.pathname.endsWith('/actu.json')) return;
 
@@ -48,10 +70,10 @@ self.addEventListener('fetch', (event) => {
       fetch(requete)
         .then((reponse) => {
           const copie = reponse.clone();
-          caches.open(CACHE).then((cache) => cache.put('/index.html', copie)).catch(() => undefined);
+          caches.open(CACHE).then((cache) => cache.put('./index.html', copie)).catch(() => undefined);
           return reponse;
         })
-        .catch(() => caches.match('/index.html').then((cache) => cache || caches.match('/'))),
+        .catch(() => caches.match('./index.html').then((cache) => cache || caches.match('./'))),
     );
     return;
   }

@@ -17,7 +17,7 @@ createRoot(document.getElementById('root')!).render(
    ========================================================================== */
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js').catch(() => {
+    navigator.serviceWorker.register('./service-worker.js').catch(() => {
       /* pas de service worker : l'application fonctionne quand même. */
     });
   });

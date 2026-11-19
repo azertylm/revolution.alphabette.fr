@@ -42,7 +42,7 @@ function Cadre() {
           <p className="affiche text-xl leading-none text-jaune">Révolution</p>
           <p className="mt-1 text-xs text-gris">L’actualité, ton avis, celui des autres.</p>
         </div>
-        <button type="button" onClick={() => aller('/comment')} className="shrink-0 text-xs font-bold text-gris underline">
+        <button type="button" onClick={() => aller('/comment')} className="text-right text-xs font-bold text-gris underline">
           Comment ça marche ?
         </button>
       </header>
